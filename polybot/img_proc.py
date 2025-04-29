@@ -1,5 +1,7 @@
 from pathlib import Path
 from matplotlib.image import imread, imsave
+import random
+
 
 
 def rgb2gray(rgb):
@@ -52,16 +54,79 @@ class Img:
 
     def rotate(self):
         # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        # Get height and width of the original image
+        height = len(self.data)
+        width = len(self.data[0]) if height > 0 else 0
+
+        # Create rotated image: width rows and height columns
+        rotated_data = []
+
+        for j in range(width):
+            new_row = []
+            for i in range(height - 1, -1, -1):  # Go bottom to top
+                new_row.append(self.data[i][j])
+            rotated_data.append(new_row)
+
+        self.data = rotated_data
 
     def salt_n_pepper(self):
         # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        new_data = []
 
+        for row in self.data:
+            new_row = []
+            for pixel in row:
+                rand_val = random.random()  # Random number between 0 and 1
+                if rand_val < 0.2:
+                    new_row.append(255)  # Salt (white pixel)
+                elif rand_val > 0.8:
+                    new_row.append(0)  # Pepper (black pixel)
+                else:
+                    new_row.append(pixel)  # Keep original
+            new_data.append(new_row)
+
+        self.data = new_data
+
+    #Implementation instruction for horizontal concatenation:
     def concat(self, other_img, direction='horizontal'):
         # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        if not isinstance(other_img, Img):
+            raise RuntimeError("The provided object is not an instance of Img.")
+
+        if direction == 'horizontal':
+            if len(self.data) != len(other_img.data):
+                raise RuntimeError("Cannot concatenate horizontally: different heights.")
+
+            # Concatenate row by row
+            new_data = []
+            for self_row, other_row in zip(self.data, other_img.data):
+                new_data.append(self_row + other_row)
+
+            self.data = new_data
+
+        elif direction == 'vertical':
+            self_width = len(self.data[0]) if self.data else 0
+            other_width = len(other_img.data[0]) if other_img.data else 0
+
+            if self_width != other_width:
+                raise RuntimeError("Cannot concatenate vertically: different widths.")
+
+            self.data = self.data + other_img.data
+
+        else:
+            raise RuntimeError("Invalid direction.")
 
     def segment(self):
         # TODO remove the `raise` below, and write your implementation
-        raise NotImplementedError()
+        new_data = []
+
+        for row in self.data:
+            new_row = []
+            for pixel in row:
+                if pixel > 100:
+                    new_row.append(255)  # White pixel
+                else:
+                    new_row.append(0)  # Black pixel
+            new_data.append(new_row)
+
+        self.data = new_data

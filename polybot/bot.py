@@ -1,9 +1,11 @@
+import traceback
 import telebot
 from loguru import logger
 import os
 import time
 from telebot.types import InputFile
 from polybot.img_proc import Img
+
 
 
 class Bot:
@@ -75,4 +77,121 @@ class QuoteBot(Bot):
 
 
 class ImageProcessingBot(Bot):
-    pass
+    def __init__(self, token, telegram_chat_url):
+        super().__init__(token, telegram_chat_url)
+        self.media_group_photos = {}  # media_group_id -> {'paths': [...], 'caption': '...', 'chat_id': ...}
+
+    def handle_message(self, message):
+        try:
+            chat_id = message['chat']['id']
+
+            # Handle /start and plain text
+            if 'text' in message:
+                text = message['text'].strip().lower()
+                if text == '/start':
+                    self.send_text(chat_id, "👋 Hello! I'm your image processing bot. Send me a photo with a caption like 'Rotate', 'Blur', 'Segment', or send two photos with 'Concat'.")
+                else:
+                    self.send_text(
+                        chat_id,
+                        "🖼️ Please send a photo with one of the following filter captions:\n"
+                        "• 📸 Blur\n"
+                        "• ✏️ Contour\n"
+                        "• 🔄 Rotate\n"
+                        "• 🧩 Segment\n"
+                        "• 🧂🌶️ Salt and pepper\n"
+                        "• 🌗 Concat (send two photos at the same time)\n\n"
+                        "Just type the filter name as the photo's caption."
+                    )
+                return
+
+            # Handle photo messages
+            if 'photo' in message:
+                caption = message.get('caption', '').strip().lower()
+                media_group_id = message.get('media_group_id')
+                local_photo_path = self.download_user_photo(message)
+
+                # 📦 Filter-to-emoji map
+                emoji_map = {
+                    'blur': '📸',
+                    'contour': '✏️',
+                    'rotate': '🔄',
+                    'segment': '🧩',
+                    'salt and pepper': '🧂🌶️',
+                    'concat': '🌗'
+                }
+
+                # Handle multi-photo concat using media_group_id
+                if media_group_id:
+                    if media_group_id not in self.media_group_photos:
+                        self.media_group_photos[media_group_id] = {
+                            'paths': [],
+                            'caption': caption,
+                            'chat_id': chat_id
+                        }
+
+                    group = self.media_group_photos[media_group_id]
+                    group['paths'].append(local_photo_path)
+
+                    # Store the caption if it exists
+                    if caption:
+                        group['caption'] = caption
+
+                    # Wait for 2 photos
+                    if len(group['paths']) == 2:
+                        if group['caption'] == 'concat':
+                            self.send_text(chat_id, f"{emoji_map['concat']} I am concatenating your photos. Just a few moments...")
+                            img1 = Img(group['paths'][0])
+                            img2 = Img(group['paths'][1])
+                            img1.concat(img2, direction='horizontal')
+                            output_path = img1.save_img()
+                            self.send_photo(chat_id, output_path)
+                            self.send_text(chat_id, f"💥 Your photos have been concatenated successfully!")
+                        else:
+                            self.send_text(chat_id, "Unsupported or missing caption for photo group.")
+
+                        # Cleanup
+                        del self.media_group_photos[media_group_id]
+                    return
+
+                # --- SINGLE PHOTO FILTERS ---
+                if not caption:
+                    self.send_text(chat_id, "Please add a caption like 'Rotate', 'Blur', etc.")
+                    return
+
+                img = Img(local_photo_path)
+
+                # Pre-message
+                if caption in emoji_map:
+                    self.send_text(chat_id, f"{emoji_map[caption]} I am doing a {caption} for your photo. Just a few moments...")
+
+                # Apply filter
+                if caption == 'blur':
+                    img.blur()
+                elif caption == 'contour':
+                    img.contour()
+                elif caption == 'rotate':
+                    img.rotate()
+                elif caption == 'segment':
+                    img.segment()
+                elif caption == 'salt and pepper':
+                    img.salt_n_pepper()
+                else:
+                    self.send_text(chat_id, "Unsupported filter! Try: Blur, Contour, Rotate, Segment, Salt and pepper, Concat.")
+                    return
+
+                # Post-processing
+                output_path = img.save_img()
+                self.send_photo(chat_id, output_path)
+                self.send_text(chat_id, f"💥 Your photo has been {caption}ed successfully!")
+                print(f"Processed and sent photo with filter '{caption}'")
+
+            else:
+                self.send_text(chat_id, "Unsupported message type. Please send a photo with a caption.")
+
+        except Exception as e:
+            print("Error handling message:", traceback.format_exc())
+            self.send_text(chat_id, "Something went wrong... please try again.")
+
+
+
+
