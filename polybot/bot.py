@@ -191,3 +191,4 @@ class ImageProcessingBot(Bot):
         except Exception as e:
             print("Error handling message:", traceback.format_exc())
             self.send_text(chat_id, "Something went wrong... please try again.")
+
