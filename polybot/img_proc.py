@@ -56,16 +56,16 @@ class Img:
         # TODO remove the `raise` below, and write your implementation
         # Get height and width of the original image
         height = len(self.data)
-        width = len(self.data[0]) if height > 0 else 0
+        width = len(self.data[0])
 
-        # Create rotated image: width rows and height columns
+        # Initialize a new list to store the rotated image
         rotated_data = []
 
         for j in range(width):
             new_row = []
-            for i in range(height - 1, -1, -1):  # Go bottom to top
-                new_row.append(self.data[i][j])
-            rotated_data.append(new_row)
+            for i in range(height - 1, -1, -1): # The loop goes from the last row to the first row
+                new_row.append(self.data[i][j]) #Builds a vertical slice of the original image, from bottom to top, and stores it as a row in the rotated image.
+            rotated_data.append(new_row) # Append the constructed row to the rotated image
 
         self.data = rotated_data
 
@@ -73,10 +73,12 @@ class Img:
         # TODO remove the `raise` below, and write your implementation
         new_data = []
 
+        # Loop through each row in the image
         for row in self.data:
             new_row = []
+            # Loop through each pixel in the current row
             for pixel in row:
-                rand_val = random.random()  # Random number between 0 and 1
+                rand_val = random.random()  # Generate Random number between 0 and 1
                 if rand_val < 0.2:
                     new_row.append(255)  # Salt (white pixel)
                 elif rand_val > 0.8:
@@ -94,24 +96,26 @@ class Img:
             raise RuntimeError("The provided object is not an instance of Img.")
 
         if direction == 'horizontal':
-            if len(self.data) != len(other_img.data):
+            self_height = len(self.data)
+            other_height = len(other_img.data)
+            if self_height  != other_height:
                 raise RuntimeError("Cannot concatenate horizontally: different heights.")
 
             # Concatenate row by row
             new_data = []
-            for self_row, other_row in zip(self.data, other_img.data):
-                new_data.append(self_row + other_row)
+            for self_row, other_row in zip(self.data, other_img.data): #pairs up corresponding rows from both images
+                new_data.append(self_row + other_row) #concatenates the two lists
 
             self.data = new_data
 
         elif direction == 'vertical':
-            self_width = len(self.data[0]) if self.data else 0
-            other_width = len(other_img.data[0]) if other_img.data else 0
+            self_width = len(self.data[0])
+            other_width = len(other_img.data[0])
 
             if self_width != other_width:
                 raise RuntimeError("Cannot concatenate vertically: different widths.")
 
-            self.data = self.data + other_img.data
+            self.data = self.data + other_img.data #concatenates the lists
 
         else:
             raise RuntimeError("Invalid direction.")
@@ -119,9 +123,10 @@ class Img:
     def segment(self):
         # TODO remove the `raise` below, and write your implementation
         new_data = []
-
+        # Loop through each row in the grayscale image
         for row in self.data:
             new_row = []
+            # Loop through each pixel in the current row
             for pixel in row:
                 if pixel > 100:
                     new_row.append(255)  # White pixel

@@ -78,18 +78,20 @@ class QuoteBot(Bot):
 
 class ImageProcessingBot(Bot):
     def __init__(self, token, telegram_chat_url):
-        super().__init__(token, telegram_chat_url)
+        super().__init__(token, telegram_chat_url) #Calls the parent class constructor (Bot) to initialize whatever it needs
         self.media_group_photos = {}  # media_group_id -> {'paths': [...], 'caption': '...', 'chat_id': ...}
 
+    #Handling incoming Telegram messages
     def handle_message(self, message):
+        chat_id = None
         try:
             chat_id = message['chat']['id']
 
             # Handle /start and plain text
             if 'text' in message:
-                text = message['text'].strip().lower()
+                text = message['text'].strip().lower()  #Extracts the text, strips whitespace, and converts to lowercase.
                 if text == '/start':
-                    self.send_text(chat_id, "👋 Hello! I'm your image processing bot. Send me a photo with a caption like 'Rotate', 'Blur', 'Segment', or send two photos with 'Concat'.")
+                    self.send_text(chat_id, "👋 Hello! I'm Deema's image bot. Send me a photo with a caption like 'Rotate', 'Blur', 'Segment', or send two photos with 'Concat' .")
                 else:
                     self.send_text(
                         chat_id,
@@ -106,11 +108,11 @@ class ImageProcessingBot(Bot):
 
             # Handle photo messages
             if 'photo' in message:
-                caption = message.get('caption', '').strip().lower()
-                media_group_id = message.get('media_group_id')
+                caption = message.get('caption', '').strip().lower() #Extracts the caption text, strips whitespace, and converts to lowercase.
+                media_group_id = message.get('media_group_id')  #Checks if this photo is part of a media group - It’s used for concat.
                 local_photo_path = self.download_user_photo(message)
 
-                # 📦 Filter-to-emoji map
+                # Filter-to-emoji map
                 emoji_map = {
                     'blur': '📸',
                     'contour': '✏️',
@@ -120,17 +122,25 @@ class ImageProcessingBot(Bot):
                     'concat': '🌗'
                 }
 
-                # Handle multi-photo concat using media_group_id
-                if media_group_id:
+                # --- 2 PHOTOS FILTER (CONCAT) ---
+                if media_group_id:  #Checks if the incoming photo is part of a media group
                     if media_group_id not in self.media_group_photos:
-                        self.media_group_photos[media_group_id] = {
+                        self.media_group_photos[media_group_id] = {   #nitializes a new group entry in the self.media_group_photos dictionary
                             'paths': [],
                             'caption': caption,
                             'chat_id': chat_id
                         }
 
+                    # Adds the newly received photo's file path to the list of image paths in this group.
                     group = self.media_group_photos[media_group_id]
                     group['paths'].append(local_photo_path)
+
+                    # More than 2 photos for concat || only one photo sent to concat
+                    if len(group['paths']) > 2 :
+                        self.send_text(chat_id,"'Concat' requires 2 photos sent together. Try again please with 2 photos")
+                        del self.media_group_photos[media_group_id]
+                        return
+
 
                     # Store the caption if it exists
                     if caption:
@@ -140,22 +150,29 @@ class ImageProcessingBot(Bot):
                     if len(group['paths']) == 2:
                         if group['caption'] == 'concat':
                             self.send_text(chat_id, f"{emoji_map['concat']} I am concatenating your photos. Just a few moments...")
+                            #Loads the two saved image files into Img objects using Img class.
                             img1 = Img(group['paths'][0])
                             img2 = Img(group['paths'][1])
                             img1.concat(img2, direction='horizontal')
                             output_path = img1.save_img()
                             self.send_photo(chat_id, output_path)
                             self.send_text(chat_id, f"💥 Your photos have been concatenated successfully!")
+                            print(f"Processed and sent photo with filter concat'")
                         else:
                             self.send_text(chat_id, "Unsupported or missing caption for photo group.")
 
-                        # Cleanup
+                        # Cleanup to prevents memory leaks and prepares the bot for the next media group.
                         del self.media_group_photos[media_group_id]
                     return
+
 
                 # --- SINGLE PHOTO FILTERS ---
                 if not caption:
                     self.send_text(chat_id, "Please add a caption like 'Rotate', 'Blur', etc.")
+                    return
+
+                if caption == 'concat':
+                    self.send_text(chat_id, "'Concat' requires 2 photos sent together. Try again please with 2 photos")
                     return
 
                 img = Img(local_photo_path)
@@ -189,6 +206,5 @@ class ImageProcessingBot(Bot):
                 self.send_text(chat_id, "Unsupported message type. Please send a photo with a caption.")
 
         except Exception as e:
-            print("Error handling message:", traceback.format_exc())
+            print("Error handling message:", traceback.format_exc()) #It captures the error message + stack trace as a string,
             self.send_text(chat_id, "Something went wrong... please try again.")
-
