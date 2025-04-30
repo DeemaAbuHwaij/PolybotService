@@ -91,7 +91,15 @@ class ImageProcessingBot(Bot):
             if 'text' in message:
                 text = message['text'].strip().lower()  #Extracts the text, strips whitespace, and converts to lowercase.
                 if text == '/start':
-                    self.send_text(chat_id, "👋 Hello! I'm Deema's image bot. Send me a photo with a caption like 'Rotate', 'Blur', 'Segment', or send two photos with 'Concat' .")
+                    self.send_text(chat_id,
+                                   "👋 Hello! I'm Deema's image bot.\n\n"
+                                   "📸 To apply filters, send one photo with one of the following captions:\n"
+                                   "• Blur\n• Contour\n• Rotate\n• Segment\n• Salt and pepper\n\n"
+                                   "🌗 To concatenate images, send two photos together with one of these captions:\n"
+                                   "• concat horizontal (side by side)\n"
+                                   "• concat vertical (one above the other)\n\n"
+                                   "Just type the filter name as the photo's caption."
+                                   )
                 else:
                     self.send_text(
                         chat_id,
@@ -100,8 +108,10 @@ class ImageProcessingBot(Bot):
                         "• ✏️ Contour\n"
                         "• 🔄 Rotate\n"
                         "• 🧩 Segment\n"
-                        "• 🧂🌶️ Salt and pepper\n"
-                        "• 🌗 Concat (send two photos at the same time)\n\n"
+                        "• 🧂🌶️ Salt and pepper\n\n"
+                        "🌗 *To concatenate two photos*, send them together with one of the following captions:\n"
+                        "• concat horizontal\n"
+                        "• concat vertical\n\n"
                         "Just type the filter name as the photo's caption."
                     )
                 return
@@ -148,18 +158,21 @@ class ImageProcessingBot(Bot):
 
                     # Wait for 2 photos
                     if len(group['paths']) == 2:
-                        if group['caption'] == 'concat':
-                            self.send_text(chat_id, f"{emoji_map['concat']} I am concatenating your photos. Just a few moments...")
-                            #Loads the two saved image files into Img objects using Img class.
+                        if group['caption'].startswith('concat'):
+                            parts = group['caption'].split()
+                            direction = 'horizontal'  # default direction
+                            if len(parts) > 1 and parts[1] in ['horizontal', 'vertical']:
+                                direction = parts[1]
+
+                            self.send_text(chat_id,f"{emoji_map['concat']} I am concatenating your photos *{direction}ly*. Just a few moments...")
+
                             img1 = Img(group['paths'][0])
                             img2 = Img(group['paths'][1])
-                            img1.concat(img2, direction='horizontal')
+                            img1.concat(img2, direction=direction)
                             output_path = img1.save_img()
                             self.send_photo(chat_id, output_path)
-                            self.send_text(chat_id, f"💥 Your photos have been concatenated successfully!")
-                            print(f"Processed and sent photo with filter concat'")
-                        else:
-                            self.send_text(chat_id, "Unsupported or missing caption for photo group.")
+                            self.send_text(chat_id,f"💥 Your photos have been concatenated *{direction}ly* successfully!")
+                            print(f"Processed and sent photo with filter 'concat {direction}'")
 
                         # Cleanup to prevents memory leaks and prepares the bot for the next media group.
                         del self.media_group_photos[media_group_id]
