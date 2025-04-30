@@ -334,8 +334,44 @@ Time to submit your solution for testing.
 1. In [GitHub Actions][github_actions], watch the automated test execution workflow (enable Actions if needed). 
    If there are any failures, click on the failed job and **read the test logs carefully**. Fix your solution, commit and push again.
 
-
 ## Good Luck
+
+---
+
+## How to Run Deema's bot 
+
+1. **Install dependencies**  
+   Make sure you have Python 3 and `pip` installed. Then run:
+
+   ```bash
+   pip install -r requirements.txt
+
+2. **Set your environment variables** 
+
+    Create a .env file or set the following variables:
+
+          TELEGRAM_BOT_TOKEN=your_bot_token_here
+
+          TELEGRAM_CHAT_URL=https://api.telegram.org/bot
+    
+
+3. **Run the bot**
+
+   ```bash
+    python3 -m polybot.app
+
+---
+
+
+
+## 🌟 Final Touch
+
+Thanks for checking out Deema’s Image Processing Bot!
+
+Whether you're transforming selfies or stitching landscapes, I hope this tool adds a little creativity and a lot of fun to your Telegram experience. 🤖🎨
+
+If you enjoy using the bot, feel free to ⭐️ the repo, share it, or suggest new filters!
+
 
 [DevOpsTheHardWay]: https://github.com/exit-zero-academy/DevOpsTheHardWay
 [autotest_badge]: ../../actions/workflows/project_auto_testing.yaml/badge.svg?event=push
