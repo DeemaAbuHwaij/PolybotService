@@ -5,23 +5,16 @@ import os
 import time
 from telebot.types import InputFile
 from polybot.img_proc import Img
-
+import requests
 
 
 class Bot:
 
     def __init__(self, token, telegram_chat_url):
-        # create a new instance of the TeleBot class.
-        # all communication with Telegram servers are done using self.telegram_bot_client
         self.telegram_bot_client = telebot.TeleBot(token)
-
-        # remove any existing webhooks configured in Telegram servers
         self.telegram_bot_client.remove_webhook()
         time.sleep(0.5)
-
-        # set the webhook URL
         self.telegram_bot_client.set_webhook(url=f'{telegram_chat_url}/{token}/', timeout=60)
-
         logger.info(f'Telegram Bot information\n\n{self.telegram_bot_client.get_me()}')
 
     def send_text(self, chat_id, text):
@@ -34,12 +27,8 @@ class Bot:
         return 'photo' in msg
 
     def download_user_photo(self, msg):
-        """
-        Downloads the photos that sent to the Bot to `photos` directory (should be existed)
-        :return:
-        """
         if not self.is_current_msg_photo(msg):
-            raise RuntimeError(f'Message content of type \'photo\' expected')
+            raise RuntimeError("Message content of type 'photo' expected")
 
         file_info = self.telegram_bot_client.get_file(msg['photo'][-1]['file_id'])
         data = self.telegram_bot_client.download_file(file_info.file_path)
@@ -56,14 +45,9 @@ class Bot:
     def send_photo(self, chat_id, img_path):
         if not os.path.exists(img_path):
             raise RuntimeError("Image path doesn't exist")
-
-        self.telegram_bot_client.send_photo(
-            chat_id,
-            InputFile(img_path)
-        )
+        self.telegram_bot_client.send_photo(chat_id, InputFile(img_path))
 
     def handle_message(self, msg):
-        """Bot Main message handler"""
         logger.info(f'Incoming message: {msg}')
         self.send_text(msg['chat']['id'], f'Your original message: {msg["text"]}')
 
@@ -71,115 +55,98 @@ class Bot:
 class QuoteBot(Bot):
     def handle_message(self, msg):
         logger.info(f'Incoming message: {msg}')
-
         if msg["text"] != 'Please don\'t quote me':
             self.send_text_with_quote(msg['chat']['id'], msg["text"], quoted_msg_id=msg["message_id"])
 
+print("🔁 bot.py updated and deployed!")
 
 class ImageProcessingBot(Bot):
     def __init__(self, token, telegram_chat_url):
-        super().__init__(token, telegram_chat_url) #Calls the parent class constructor (Bot) to initialize whatever it needs
-        self.media_group_photos = {}  # media_group_id -> {'paths': [...], 'caption': '...', 'chat_id': ...}
+        super().__init__(token, telegram_chat_url)
+        self.media_group_photos = {}
 
-    #Handling incoming Telegram messages
     def handle_message(self, message):
         chat_id = None
         try:
             chat_id = message['chat']['id']
 
-            # Handle /start and plain text
+            # Handle /start and text
             if 'text' in message:
-                text = message['text'].strip().lower()  #Extracts the text, strips whitespace, and converts to lowercase.
+                text = message['text'].strip().lower()
                 if text == '/start':
                     self.send_text(chat_id,
                                    "👋 Hello! I'm Deema's image bot.\n\n"
                                    "📸 To apply filters, send one photo with one of the following captions:\n"
-                                   "• Blur\n• Contour\n• Rotate\n• Segment\n• Salt and pepper\n\n"
+                                   "• Blur\n• Contour\n• Rotate\n• Segment\n• Salt and pepper\n• Detect\n\n"
                                    "🌗 To concatenate images, send two photos together with one of these captions:\n"
-                                   "• concat horizontal (side by side)\n"
-                                   "• concat vertical (one above the other)\n\n"
-                                   "Just type the filter name as the photo's caption."
-                                   )
+                                   "• concat horizontal\n• concat vertical\n\n"
+                                   "Just type the filter name as the photo's caption.")
                 else:
-                    self.send_text(
-                        chat_id,
-                        "🖼️ Please send a photo with one of the following filter captions:\n"
-                        "• 📸 Blur\n"
-                        "• ✏️ Contour\n"
-                        "• 🔄 Rotate\n"
-                        "• 🧩 Segment\n"
-                        "• 🧂🌶️ Salt and pepper\n\n"
-                        "🌗 *To concatenate two photos*, send them together with one of the following captions:\n"
-                        "• concat horizontal\n"
-                        "• concat vertical\n\n"
-                        "Just type the filter name as the photo's caption."
-                    )
+                    self.send_text(chat_id,
+                                   "🖼️ Please send a photo with one of the following filter captions:\n"
+                                   "• 📸 Blur\n• ✏️ Contour\n• 🔄 Rotate\n• 🧩 Segment\n• 🧂🌶️ Salt and pepper\n• 🧠 Detect\n\n"
+                                   "🌗 *To concatenate two photos*, send them together with a caption:\n"
+                                   "• concat horizontal or concat vertical")
                 return
 
-            # Handle photo messages
+            # Handle photo
             if 'photo' in message:
-                caption = message.get('caption', '').strip().lower() #Extracts the caption text, strips whitespace, and converts to lowercase.
-                media_group_id = message.get('media_group_id')  #Checks if this photo is part of a media group - It’s used for concat.
+                caption = message.get('caption', '').strip().lower()
+                media_group_id = message.get('media_group_id')
                 local_photo_path = self.download_user_photo(message)
 
-                # Filter-to-emoji map
                 emoji_map = {
                     'blur': '📸',
                     'contour': '✏️',
                     'rotate': '🔄',
                     'segment': '🧩',
                     'salt and pepper': '🧂🌶️',
-                    'concat': '🌗'
+                    'concat': '🌗',
+                    'detect': '🧠'
                 }
 
-                # --- 2 PHOTOS FILTER (CONCAT) ---
-                if media_group_id:  #Checks if the incoming photo is part of a media group
+                # CONCAT MULTI-PHOTO
+                if media_group_id:
                     if media_group_id not in self.media_group_photos:
-                        self.media_group_photos[media_group_id] = {   #nitializes a new group entry in the self.media_group_photos dictionary
+                        self.media_group_photos[media_group_id] = {
                             'paths': [],
                             'caption': caption,
                             'chat_id': chat_id
                         }
 
-                    # Adds the newly received photo's file path to the list of image paths in this group.
                     group = self.media_group_photos[media_group_id]
                     group['paths'].append(local_photo_path)
 
-                    # More than 2 photos for concat || only one photo sent to concat
-                    if len(group['paths']) > 2 :
-                        self.send_text(chat_id,"'Concat' requires 2 photos sent together. Try again please with 2 photos")
+                    if len(group['paths']) > 2:
+                        self.send_text(chat_id,
+                                       "'Concat' requires 2 photos sent together. Try again please with 2 photos")
                         del self.media_group_photos[media_group_id]
                         return
 
-
-                    # Store the caption if it exists
                     if caption:
                         group['caption'] = caption
 
-                    # Wait for 2 photos
                     if len(group['paths']) == 2:
                         if group['caption'].startswith('concat'):
+                            direction = 'horizontal'
                             parts = group['caption'].split()
-                            direction = 'horizontal'  # default direction
                             if len(parts) > 1 and parts[1] in ['horizontal', 'vertical']:
                                 direction = parts[1]
 
-                            self.send_text(chat_id,f"{emoji_map['concat']} I am concatenating your photos *{direction}ly*. Just a few moments...")
-
+                            self.send_text(chat_id,
+                                           f"{emoji_map['concat']} I am concatenating your photos *{direction}ly*. Just a few moments...")
                             img1 = Img(group['paths'][0])
                             img2 = Img(group['paths'][1])
                             img1.concat(img2, direction=direction)
                             output_path = img1.save_img()
                             self.send_photo(chat_id, output_path)
-                            self.send_text(chat_id,f"💥 Your photos have been concatenated *{direction}ly* successfully!")
+                            self.send_text(chat_id,
+                                           f"💥 Your photos have been concatenated *{direction}ly* successfully!")
                             print(f"Processed and sent photo with filter 'concat {direction}'")
-
-                        # Cleanup to prevents memory leaks and prepares the bot for the next media group.
                         del self.media_group_photos[media_group_id]
                     return
 
-
-                # --- SINGLE PHOTO FILTERS ---
+                # SINGLE PHOTO FILTERS
                 if not caption:
                     self.send_text(chat_id, "Please add a caption like 'Rotate', 'Blur', etc.")
                     return
@@ -190,11 +157,10 @@ class ImageProcessingBot(Bot):
 
                 img = Img(local_photo_path)
 
-                # Pre-message
                 if caption in emoji_map:
-                    self.send_text(chat_id, f"{emoji_map[caption]} I am doing a {caption} for your photo. Just a few moments...")
+                    self.send_text(chat_id,
+                                   f"{emoji_map[caption]} I am doing a {caption} for your photo. Just a few moments...")
 
-                # Apply filter
                 if caption == 'blur':
                     img.blur()
                 elif caption == 'contour':
@@ -205,11 +171,36 @@ class ImageProcessingBot(Bot):
                     img.segment()
                 elif caption == 'salt and pepper':
                     img.salt_n_pepper()
+                elif caption == 'detect':
+                    try:
+                        output_path = img.save_img()
+                        yolo_url = "http://18.144.81.240:8080/predict"
+
+                        with open(output_path, 'rb') as f:
+                            response = requests.post(yolo_url, files={"file": f})
+                            response.raise_for_status()
+
+                        data = response.json()
+                        labels = data.get("labels", [])
+                        if labels:
+                            reply_message = "🧠 Detected objects: " + ", ".join(labels)
+                        else:
+                            reply_message = "🔍 No objects detected."
+
+                        self.send_photo(chat_id, output_path)
+                        self.send_text(chat_id, reply_message)
+                        self.send_text(chat_id, "💥 Your photo has been *detected* successfully!")
+                        print("Processed and sent photo with filter 'detect'")
+                        return
+                    except Exception as e:
+                        logger.error(f"Failed to get predictions from YOLO: {e}")
+                        self.send_text(chat_id, "❗ Error occurred while contacting YOLO service.")
+                        return
                 else:
-                    self.send_text(chat_id, "Unsupported filter! Try: Blur, Contour, Rotate, Segment, Salt and pepper, Concat.")
+                    self.send_text(chat_id,
+                                   "Unsupported filter! Try: Blur, Contour, Rotate, Segment, Salt and pepper, Detect, Concat.")
                     return
 
-                # Post-processing
                 output_path = img.save_img()
                 self.send_photo(chat_id, output_path)
                 self.send_text(chat_id, f"💥 Your photo has been {caption}ed successfully!")
@@ -219,5 +210,5 @@ class ImageProcessingBot(Bot):
                 self.send_text(chat_id, "Unsupported message type. Please send a photo with a caption.")
 
         except Exception as e:
-            print("Error handling message:", traceback.format_exc()) #It captures the error message + stack trace as a string,
+            print("Error handling message:", traceback.format_exc())
             self.send_text(chat_id, "Something went wrong... please try again.")
