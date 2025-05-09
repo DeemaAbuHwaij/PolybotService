@@ -174,7 +174,7 @@ class ImageProcessingBot(Bot):
                 elif caption == 'detect':
                     try:
                         output_path = img.save_img()
-                        yolo_url = "http://18.144.81.240:8080/predict"
+                        yolo_url = "http://13.57.255.214:8080/predict"
 
                         with open(output_path, 'rb') as f:
                             response = requests.post(yolo_url, files={"file": f})
