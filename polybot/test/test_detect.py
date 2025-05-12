@@ -20,3 +20,4 @@ def test_detect_filter():
     data = response.json()
     assert "labels" in data, "Response does not contain 'labels'"
     assert isinstance(data["labels"], list), "Labels is not a list"
+
