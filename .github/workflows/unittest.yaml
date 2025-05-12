@@ -37,6 +37,13 @@ jobs:
           echo -e "\n\nTesting segment()\n"
           python -m polybot.test.test_segment
 
+          echo -e "\n\nTesting detect()\n"
+          python -m polybot.test.test_detect
+
+          echo -e "\n\nTesting blur()\n"
+          python -m polybot.test.test_blur
+
+
       - name: Test bot
         run: |
           python -m polybot.test.test_telegram_bot
