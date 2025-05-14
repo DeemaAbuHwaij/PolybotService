@@ -1,10 +1,26 @@
+import unittest
 from polybot.img_proc import Img
 import os
 
-def test_contour_filter():
-    test_image_path = os.path.join(os.path.dirname(__file__), "photos", "beatles.jpeg")
-    img = Img(test_image_path)
+img_path = 'polybot/test/beatles.jpeg' if '/polybot/test' not in os.getcwd() else 'beatles.jpeg'
 
-    contoured = img.contour()
-    assert contoured is not None, "Contour image is None"
-    assert contoured.size == img.original.size, "Contour image size does not match original"
+
+class TestImgContour(unittest.TestCase):
+
+    def setUp(self):
+        self.img = Img(img_path)
+        self.original_shape = (len(self.img.data), len(self.img.data[0]))
+
+    def test_contour_preserves_dimensions(self):
+        self.img.contour()
+        new_shape = (len(self.img.data), len(self.img.data[0]))
+        self.assertEqual(self.original_shape, new_shape)
+
+    def test_contour_changes_pixel_values(self):
+        original_data = [row[:] for row in self.img.data]
+        self.img.contour()
+        self.assertNotEqual(original_data, self.img.data)
+
+
+if __name__ == '__main__':
+    unittest.main()

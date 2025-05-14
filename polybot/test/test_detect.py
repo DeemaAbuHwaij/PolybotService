@@ -1,22 +1,25 @@
-import os
-import requests
+import unittest
 from polybot.img_proc import Img
+import os
 
-def test_detect_filter():
-    # Arrange
-    test_image_path = os.path.join(os.path.dirname(__file__), "photos", "beatles.jpeg")
-    img = Img(test_image_path)
+img_path = 'polybot/test/beatles.jpeg' if '/polybot/test' not in os.getcwd() else 'beatles.jpeg'
 
-    # Act
-    output_path = img.save_img()
 
-    try:
-        response = requests.post("http://10.0.1.66:8080/predict", files={"file": open(output_path, "rb")})
-        response.raise_for_status()
-    except Exception as e:
-        assert False, f"Request to YOLO failed: {e}"
+class TestImgDetect(unittest.TestCase):
 
-    # Assert
-    data = response.json()
-    assert "labels" in data, "Response does not contain 'labels'"
-    assert isinstance(data["labels"], list), "Labels is not a list"
+    def setUp(self):
+        self.img = Img(img_path)
+
+    def test_detect_returns_labels(self):
+        labels = self.img.detect()
+        self.assertIsInstance(labels, list)
+        # If expected labels are known, you can check:
+        # self.assertIn("person", labels)
+
+    def test_detect_is_not_empty(self):
+        labels = self.img.detect()
+        self.assertTrue(len(labels) > 0, "No objects detected")
+
+
+if __name__ == '__main__':
+    unittest.main()
