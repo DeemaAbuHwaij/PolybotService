@@ -3,14 +3,14 @@
 echo "🚀 Starting Polybot deployment..."
 
 cd /home/ubuntu/polybot || {
-  echo "❌ Failed to cd into /home/ubuntu/polybot"
+  echo "❌ Could not cd into /home/ubuntu/polybot"
   exit 1
 }
 
-echo "📥 Pulling latest code from main..."
+echo "📥 Pulling latest changes..."
 git pull origin main
 
-echo "🔁 Restarting polybot service..."
+echo "🔁 Restarting Polybot service..."
 sudo systemctl restart polybot.service
 
-echo "✅ Polybot deployed successfully!"
+echo "✅ Deployment finished successfully!"
