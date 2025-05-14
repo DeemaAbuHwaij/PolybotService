@@ -1,25 +1,32 @@
 import unittest
+from unittest.mock import patch, mock_open
 from polybot.img_proc import Img
-import os
-
-img_path = 'polybot/test/beatles.jpeg' if '/polybot/test' not in os.getcwd() else 'beatles.jpeg'
-
 
 class TestImgDetect(unittest.TestCase):
 
     def setUp(self):
-        self.img = Img(img_path)
+        self.img = Img("polybot/test/beatles.jpeg")
 
-    def test_detect_returns_labels(self):
+    @patch("builtins.open", new_callable=mock_open, read_data=b"fake_image_data")
+    @patch("requests.post")
+    def test_detect_returns_expected_labels(self, mock_post, mock_file):
+        # Simulate YOLO API response
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = {"labels": ["person", "car"]}
+
         labels = self.img.detect()
         self.assertIsInstance(labels, list)
-        # If expected labels are known, you can check:
-        # self.assertIn("person", labels)
+        self.assertIn("person", labels)
+        self.assertIn("car", labels)
 
-    def test_detect_is_not_empty(self):
+    @patch("builtins.open", new_callable=mock_open, read_data=b"fake_image_data")
+    @patch("requests.post")
+    def test_detect_empty_response(self, mock_post, mock_file):
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = {"labels": []}
+
         labels = self.img.detect()
-        self.assertTrue(len(labels) > 0, "No objects detected")
-
+        self.assertEqual(labels, [])
 
 if __name__ == '__main__':
     unittest.main()
