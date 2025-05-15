@@ -23,13 +23,10 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
 
       - name: Add EC2 host to known_hosts
-        run: |
-          ssh-keyscan -H ${{ secrets.POLYBOT_HOST }} >> ~/.ssh/known_hosts
+        run: ssh-keyscan -H ${{ secrets.POLYBOT_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_HOST }} << 'EOF'
-            cd /home/ubuntu/polybot    # Change this to your actual directory
-            git pull origin main
-            sudo systemctl restart polybot.service
-          EOF
+      - name: Copy deploy.sh to EC2
+        run: scp -i ~/.ssh/id_rsa deploy.sh ubuntu@${{ secrets.POLYBOT_HOST }}:/tmp/deploy.sh
+
+      - name: Run deploy.sh on EC2
+        run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_HOST }} 'bash /tmp/deploy.sh'

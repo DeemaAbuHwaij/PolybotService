@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+
 
 permissions: {}
 
@@ -13,7 +17,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
         with:
-          repository: alonitac/ImageProcessingChatBotProject
+          repository: DeemaAbuHwaij/PolybotService
           path: ImageProcessingChatBotProjectOriginal
       - name: Copy test files
         run: mv -f ImageProcessingChatBotProjectOriginal/polybot/test/* polybot/test/
@@ -32,7 +36,8 @@ jobs:
           python -m polybot.test.test_salt_n_pepper
           
           echo -e "\n\nTesting segment()\n"
-          python -m polybot.test.test_segment
+          python -m polybot.test.test_segment         
+
       - name: Test bot
         run: |
           python -m polybot.test.test_telegram_bot
