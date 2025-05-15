@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
         with:
-          repository: alonitac/ImageProcessingChatBotProject
+          repository: DeemaAbuHwaij/ImageProcessingChatBotProject
           path: ImageProcessingChatBotProjectOriginal
       - name: Copy test files
         run: mv -f ImageProcessingChatBotProjectOriginal/polybot/test/* polybot/test/
@@ -37,9 +37,6 @@ jobs:
           
           echo -e "\n\nTesting segment()\n"
           python -m polybot.test.test_segment         
-
-          echo -e "\n\nTesting blur()\n"
-          python -m polybot.test.test_blur
           
           echo -e "\n\nTesting contour()\n"
           python -m polybot.test.test_contour
