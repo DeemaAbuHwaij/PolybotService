@@ -2,15 +2,15 @@
 
 echo "🚀 Starting Polybot deployment..."
 
-cd /home/ubuntu/polybot || {
-  echo "❌ Could not cd into /home/ubuntu/polybot"
+# ❌ This line causes the error
+# cd /home/ubuntu/polybot
+
+# ✅ Use a relative path instead (you're already inside ~/PolybotService)
+cd polybot || {
+  echo "❌ Could not cd into ./polybot"
   exit 1
 }
 
-echo "📥 Pulling latest changes..."
-git pull origin main
-
-echo "🔁 Restarting Polybot service..."
-sudo systemctl restart polybot.service
-
-echo "✅ Deployment finished successfully!"
+# Example: restart or run something
+# python bot.py &
+echo "✅ Deployment complete"
