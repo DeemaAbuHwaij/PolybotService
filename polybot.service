@@ -8,7 +8,6 @@ WorkingDirectory=/home/deema/PycharmProjects/PolybotService
 ExecStart=/home/deema/PycharmProjects/PolybotService/venv/bin/python3 /home/deema/PycharmProjects/PolybotService/polybot/bot.py
 Restart=always
 Environment=PYTHONUNBUFFERED=1
-Environment=TELEGRAM_BOT_TOKEN=7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0
 
 [Install]
 WantedBy=multi-user.target
