@@ -1,14 +1,11 @@
 name: Project auto-testing
+
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
 
 
-permissions: {}
 
 jobs:
   TestImgProcessingChatbotApp:
