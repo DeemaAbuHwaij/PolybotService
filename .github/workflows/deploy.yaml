@@ -30,7 +30,7 @@ jobs:
       - name: Copy deploy.sh to EC2
         run: |
           echo "Copying deploy.sh to EC2..."
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa deploy.sh ubuntu@${{ secrets.POLYBOT_HOST }}:/tmp/deploy.sh
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $GITHUB_WORKSPACE/deploy.sh ubuntu@${{ secrets.POLYBOT_HOST }}:/tmp/deploy.sh
 
       - name: Run deploy.sh on EC2
         run: |
