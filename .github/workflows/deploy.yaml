@@ -1,7 +1,9 @@
 name: Polybot Deploy
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 env:
   REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
