@@ -37,4 +37,8 @@ jobs:
 
       - name: Pull repo on EC2
         run: |
-          ssh polybot "if [ -d ~/${REPO_NAME} ]; then cd ~/${REPO_NAME]()
+          ssh polybot "if [ -d ~/${{ env.REPO_NAME }} ]; then cd ~/${{ env.REPO_NAME }} && git pull; else git clone ${{ env.REPO_URL }} ~/${{ env.REPO_NAME }}; fi"
+
+      - name: Run deploy.sh on EC2
+        run: |
+          ssh polybot "cd ~/${{ env.REPO_NAME }} && bash deploy.sh"
