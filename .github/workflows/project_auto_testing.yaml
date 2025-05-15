@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/checkout@v2
         with:
-          repository: DeemaAbuHwaij/ImageProcessingChatBotProject
+          repository: DeemaAbuHwaij/PolybotService
           path: ImageProcessingChatBotProjectOriginal
       - name: Copy test files
         run: mv -f ImageProcessingChatBotProjectOriginal/polybot/test/* polybot/test/
