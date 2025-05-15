@@ -41,4 +41,4 @@ jobs:
 
       - name: Run deploy.sh on EC2
         run: |
-          ssh polybot "cd ~/${
+          ssh polybot "cd ~/${{ env.REPO_NAME }} && bash deploy.sh"
