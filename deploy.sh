@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
 
-PROJECT_DIR="/home/deema/PycharmProjects/PolybotService"
+PROJECT_DIR="$HOME/PolybotService"
 SERVICE_FILE="polybot.service"
 VENV_PATH="$PROJECT_DIR/venv"
 ENV_FILE="$PROJECT_DIR/.env"
+
 
 # Create venv if it doesn't exist
 if [ ! -d "$VENV_PATH" ]; then

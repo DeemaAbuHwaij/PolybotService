@@ -3,12 +3,13 @@ Description=Polybot Telegram Bot Service
 After=network.target
 
 [Service]
-User=deema
-WorkingDirectory=/home/deema/PycharmProjects/PolybotService
-ExecStart=/home/deema/PycharmProjects/PolybotService/venv/bin/python3 /home/deema/PycharmProjects/PolybotService/polybot/bot.py
+User=ubuntu
+WorkingDirectory=/home/ubuntu/PolybotService
+ExecStart=/home/ubuntu/PolybotService/venv/bin/python3 /home/ubuntu/PolybotService/polybot/bot.py
 Restart=always
-EnvironmentFile=/home/deema/PycharmProjects/PolybotService/.env
+EnvironmentFile=/home/ubuntu/PolybotService/.env
 Environment=PYTHONUNBUFFERED=1
+
 
 [Install]
 WantedBy=multi-user.target
