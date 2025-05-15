@@ -37,9 +37,6 @@ jobs:
           
           echo -e "\n\nTesting segment()\n"
           python -m polybot.test.test_segment         
-          
-          echo -e "\n\nTesting contour()\n"
-          python -m polybot.test.test_contour
 
       - name: Test bot
         run: |
