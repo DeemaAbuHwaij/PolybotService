@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PROJECT_DIR="$HOME/PolybotService"
+PROJECT_DIR="$(pwd)"
 SERVICE_FILE="polybot.service"
 VENV_PATH="$PROJECT_DIR/venv"
 ENV_FILE="$PROJECT_DIR/.env"
