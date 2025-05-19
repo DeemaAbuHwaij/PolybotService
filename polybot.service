@@ -1,15 +1,18 @@
 [Unit]
-Description=Polybot Telegram Bot Service
+Description=Polybot Telegram Service
 After=network.target
 
 [Service]
 User=ubuntu
 WorkingDirectory=/home/ubuntu/PolybotService
-ExecStart=/home/ubuntu/PolybotService/venv/bin/python3 /home/ubuntu/PolybotService/polybot/bot.py
+ExecStart=/usr/bin/env python3 -m polybot.app
 Restart=always
-EnvironmentFile=/home/ubuntu/PolybotService/.env
-Environment=PYTHONUNBUFFERED=1
 
+Environment=BOT_APP_URL=https://4c71-54-183-125-83.ngrok-free.app
+Environment=TELEGRAM_BOT_TOKEN=7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0
+Environment=YOLO_URL=http://10.0.1.66:8080/predict
 
 [Install]
 WantedBy=multi-user.target
+
+
