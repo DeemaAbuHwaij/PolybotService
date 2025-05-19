@@ -75,7 +75,7 @@ class ImageProcessingBot(Bot):
                 text = message['text'].strip().lower()
                 if text == '/start':
                     self.send_text(chat_id,
-                                   "👋 Hello! I'm Deema's image bot.\n\n"
+                                   "👋 Hi! I'm Deema's image bot.\n\n"
                                    "📸 To apply filters, send one photo with one of the following captions:\n"
                                    "• Blur\n• Contour\n• Rotate\n• Segment\n• Salt and pepper\n• Detect\n\n"
                                    "🌗 To concatenate images, send two photos together with one of these captions:\n"
