@@ -1,11 +1,13 @@
 #!/bin/bash
 set -e
 
-PROJECT_DIR="$HOME/PolybotService"
-REPO_URL="https://github.com/DeemaAbuHwaij/PolybotService.git"
-SERVICE_FILE="polybot-dev.service"
+
+
+
+PROJECT_DIR="$(pwd)"
+SERVICE_FILE="polybot.service"
 VENV_PATH="$PROJECT_DIR/venv"
-REQUIREMENTS="$PROJECT_DIR/polybot/requirements.txt"
+ENV_FILE="$PROJECT_DIR/.env"
 
 # Clone the repo if it doesn't exist
 if [ ! -d "$PROJECT_DIR" ]; then
