@@ -8,6 +8,10 @@ WorkingDirectory=/home/ubuntu/PolybotService
 Restart=always
 User=ubuntu
 Environment="ENV=development"
+Environment=TELEGRAM_BOT_TOKEN=8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc
+Environment=YOLO_URL=http://10.0.1.66:8080/predict
+
+
 
 [Install]
 WantedBy=multi-user.target
