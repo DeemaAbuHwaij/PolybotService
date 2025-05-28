@@ -3,11 +3,13 @@ Description=Polybot Dev Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /home/ubuntu/polybot-dev/bot.py
-WorkingDirectory=/home/ubuntu/polybot-dev
+ExecStart=/usr/bin/env python3 -m polybot.app
+WorkingDirectory=/home/ubuntu/PolybotService
 Restart=always
 User=ubuntu
 Environment="ENV=development"
 
 [Install]
 WantedBy=multi-user.target
+
+
