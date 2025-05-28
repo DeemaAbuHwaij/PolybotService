@@ -39,14 +39,14 @@ sudo cp "$PROJECT_DIR/$SERVICE_FILE" /etc/systemd/system/
 echo "🔁 Reloading and restarting Polybot service..."
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
-sudo systemctl restart polybot.service
-sudo systemctl enable polybot.service
+sudo systemctl restart polybot-prod.service
+sudo systemctl enable polybot-prod.service
 
 # Check if service is running
-if systemctl is-active --quiet polybot.service; then
+if systemctl is-active --quiet polybot-prod.service; then
   echo "✅ Polybot service is running!"
 else
   echo "❌ Polybot service failed to start."
-  sudo systemctl status polybot.service --no-pager
+  sudo systemctl status polybot-prod.service --no-pager
   exit 1
 fi
