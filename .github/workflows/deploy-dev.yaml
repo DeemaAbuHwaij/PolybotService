@@ -49,6 +49,14 @@ jobs:
             pip install --upgrade pip
             pip install -r polybot/requirements.txt
 
+            echo "🛠️ Setting up polybot-dev.service..."
+            if [ ! -f "/etc/systemd/system/polybot-dev.service" ]; then
+              sudo cp polybot-dev.service /etc/systemd/system/
+              sudo systemctl daemon-reload
+              sudo systemctl enable polybot-dev.service
+            fi
+
             echo "🚀 Restarting polybot-dev service..."
             sudo systemctl restart polybot-dev.service
-            sudo systemctl status polybot-dev
+            sudo systemctl status polybot-dev.service
+          EOF
