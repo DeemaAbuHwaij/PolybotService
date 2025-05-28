@@ -3,7 +3,7 @@ Description=Polybot Dev Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/env python3 -m polybot.app
+ExecStart=/home/ubuntu/PolybotService/venv/bin/python -m polybot.app
 WorkingDirectory=/home/ubuntu/PolybotService
 Restart=always
 User=ubuntu
