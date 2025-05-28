@@ -2,39 +2,52 @@
 set -e
 
 PROJECT_DIR="$HOME/PolybotService"
+REPO_URL="https://github.com/DeemaAbuHwaij/PolybotService.git"
 SERVICE_FILE="polybot-dev.service"
 VENV_PATH="$PROJECT_DIR/venv"
-ENV_FILE="$PROJECT_DIR/.env"
+REQUIREMENTS="$PROJECT_DIR/polybot/requirements.txt"
 
-# Clone repo if not exists
+# Clone the repo if it doesn't exist
 if [ ! -d "$PROJECT_DIR" ]; then
-  echo "📁 Cloning repository..."
-  git clone -b dev https://github.com/DeemaAbuHwaij/PolybotService.git "$PROJECT_DIR"
+  echo "📥 Cloning repo..."
+  git clone -b dev "$REPO_URL" "$PROJECT_DIR"
 fi
 
-# Go to project
+# Go into the project folder and update it
 cd "$PROJECT_DIR"
 git pull origin dev
 
-# Install venv if needed
-if ! command -v python3 > /dev/null; then
-  sudo apt update
-  sudo apt install -y python3 python3-venv
-fi
+# Install Python and venv if needed
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip
 
-# Create venv if needed
+# Set up virtual environment
 if [ ! -d "$VENV_PATH" ]; then
+  echo "🔧 Creating virtualenv..."
   python3 -m venv "$VENV_PATH"
 fi
 
 source "$VENV_PATH/bin/activate"
-pip install --upgrade pip
-pip install -r "$PROJECT_DIR/polybot/requirements.txt"
 
-# Copy service file
+# Install Python dependencies
+echo "📦 Installing requirements..."
+pip install --upgrade pip
+pip install -r "$REQUIREMENTS"
+
+# Copy the service file
+echo "⚙️ Setting up systemd service..."
 sudo cp "$PROJECT_DIR/$SERVICE_FILE" /etc/systemd/system/
 
-# Enable and restart service
+# Enable and start service
 sudo systemctl daemon-reload
 sudo systemctl enable polybot-dev.service
 sudo systemctl restart polybot-dev.service
+
+# Check status
+if systemctl is-active --quiet polybot-dev.service; then
+  echo "✅ polybot-dev.service is running!"
+else
+  echo "❌ polybot-dev.service failed to start."
+  sudo systemctl status polybot-dev.service
+  exit 1
+fi
