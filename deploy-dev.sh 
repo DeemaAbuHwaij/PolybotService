@@ -2,7 +2,7 @@
 set -e
 
 PROJECT_DIR="$(pwd)"
-SERVICE_FILE="polybot.service"
+SERVICE_FILE="polybot-dev.service"
 VENV_PATH="$PROJECT_DIR/venv"
 ENV_FILE="$PROJECT_DIR/.env"
 
@@ -36,17 +36,17 @@ echo "⚙️ Copying $SERVICE_FILE to systemd..."
 sudo cp "$PROJECT_DIR/$SERVICE_FILE" /etc/systemd/system/
 
 # Reload and restart systemd service
-echo "🔁 Reloading and restarting Polybot service..."
+echo "🔁 Reloading and restarting Polybot DEV service..."
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
-sudo systemctl restart polybot.service
-sudo systemctl enable polybot.service
+sudo systemctl restart polybot-dev.service
+sudo systemctl enable polybot-dev.service
 
 # Check if service is running
-if systemctl is-active --quiet polybot.service; then
-  echo "✅ Polybot service is running!"
+if systemctl is-active --quiet polybot-dev.service; then
+  echo "✅ Polybot DEV service is running!"
 else
-  echo "❌ Polybot service failed to start."
-  sudo systemctl status polybot.service --no-pager
+  echo "❌ Polybot DEV service failed to start."
+  sudo systemctl status polybot-dev.service --no-pager
   exit 1
 fi
