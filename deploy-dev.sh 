@@ -1,55 +1,52 @@
 #!/bin/bash
 set -e
 
-
-
-
 PROJECT_DIR="$(pwd)"
 SERVICE_FILE="polybot.service"
 VENV_PATH="$PROJECT_DIR/venv"
 ENV_FILE="$PROJECT_DIR/.env"
 
-# Clone the repo if it doesn't exist
-if [ ! -d "$PROJECT_DIR" ]; then
-  echo "📥 Cloning repo..."
-  git clone -b dev "$REPO_URL" "$PROJECT_DIR"
+# Make sure python3-venv is installed
+if ! python3 -m venv --help > /dev/null 2>&1; then
+  echo "🧰 Installing python3-venv..."
+  sudo apt update
+  sudo apt install -y python3-venv
 fi
 
-# Go into the project folder and update it
-cd "$PROJECT_DIR"
-git pull origin dev
-
-# Install Python and venv if needed
-sudo apt update
-sudo apt install -y python3 python3-venv python3-pip
-
-# Set up virtual environment
+# Create venv if it doesn't exist
 if [ ! -d "$VENV_PATH" ]; then
-  echo "🔧 Creating virtualenv..."
+  echo "🌀 Creating virtual environment..."
   python3 -m venv "$VENV_PATH"
 fi
 
-source "$VENV_PATH/bin/activate"
-
-# Install Python dependencies
+# Activate venv and install dependencies
 echo "📦 Installing requirements..."
+source "$VENV_PATH/bin/activate"
 pip install --upgrade pip
-pip install -r "$REQUIREMENTS"
+pip install -r "$PROJECT_DIR/polybot/requirements.txt"
 
-# Copy the service file
-echo "⚙️ Setting up systemd service..."
+# Check if .env exists
+if [ ! -f "$ENV_FILE" ]; then
+  echo "❌ .env file missing at $ENV_FILE"
+  exit 1
+fi
+
+# Copy systemd service file
+echo "⚙️ Copying $SERVICE_FILE to systemd..."
 sudo cp "$PROJECT_DIR/$SERVICE_FILE" /etc/systemd/system/
 
-# Enable and start service
+# Reload and restart systemd service
+echo "🔁 Reloading and restarting Polybot service..."
+sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
-sudo systemctl enable polybot-dev.service
 sudo systemctl restart polybot-dev.service
+sudo systemctl enable polybot-dev.service
 
-# Check status
+# Check if service is running
 if systemctl is-active --quiet polybot-dev.service; then
-  echo "✅ polybot-dev.service is running!"
+  echo "✅ Polybot service is running!"
 else
-  echo "❌ polybot-dev.service failed to start."
-  sudo systemctl status polybot-dev.service
+  echo "❌ Polybot service failed to start."
+  sudo systemctl status polybot-dev.service --no-pager
   exit 1
 fi
