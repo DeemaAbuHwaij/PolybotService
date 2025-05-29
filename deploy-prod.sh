@@ -1,74 +1,86 @@
 #!/bin/bash
+
 set -e
 
 PROJECT_DIR="$(pwd)"
-SERVICE_FILE="polybot.service"
+SERVICE_FILE="yolo-prod.service"
 VENV_PATH="$PROJECT_DIR/venv"
-ENV_FILE="$PROJECT_DIR/.env"
-
-# Make sure python3-venv is installed
-if ! python3 -m venv --help > /dev/null 2>&1; then
-  echo "🧰 Installing python3-venv..."
-  sudo apt update
-  sudo apt install -y python3-venv
-fi
 
 # Create venv if it doesn't exist
 if [ ! -d "$VENV_PATH" ]; then
-  echo "🌀 Creating virtual environment..."
+  echo "🔧 Creating virtual environment..."
   python3 -m venv "$VENV_PATH"
 fi
 
 # Activate venv and install dependencies
 echo "📦 Installing requirements..."
 source "$VENV_PATH/bin/activate"
-pip install --upgrade pip
-pip install -r "$PROJECT_DIR/polybot/requirements.txt"
 
-# Check if .env exists
-if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ .env file missing at $ENV_FILE"
-  exit 1
-fi
+# Fix for pip temporary directory issue
+echo "🛠️ Ensuring /tmp exists and is usable by current user..."
+sudo mkdir -p /tmp
+sudo chmod 1777 /tmp
+export TMPDIR=/tmp
+
+pip install --upgrade pip
+pip install -r "$PROJECT_DIR/requirements.txt"
 
 # Copy systemd service file
-echo "⚙️ Copying $SERVICE_FILE to systemd..."
+echo "🛠️ Copying $SERVICE_FILE to systemd..."
 sudo cp "$PROJECT_DIR/$SERVICE_FILE" /etc/systemd/system/
 
 # Reload and restart systemd service
-echo "🔁 Reloading and restarting Polybot service..."
+echo "🔄 Reloading and restarting YOLO service..."
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
-sudo systemctl restart polybot-prod.service
-sudo systemctl enable polybot-prod.service
+sudo systemctl restart yolo-prod.service
+sudo systemctl enable yolo-prod.service
 
-# Check if service is running
-if systemctl is-active --quiet polybot-prod.service; then
-  echo "✅ Polybot service is running!"
+# Check if the service is running
+if systemctl is-active --quiet yolo-prod.service; then
+  echo "✅ YOLO service is running!"
 else
-  echo "❌ Polybot service failed to start."
-  sudo systemctl status polybot-prod.service --no-pager
-  exit 1
-fi
-
-# Check if service is running
-if systemctl is-active --quiet polybot-dev.service; then
-  echo "✅ Polybot service is running!"
-else
-  echo "❌ Polybot service failed to start."
-  sudo systemctl status polybot-dev.service --no-pager
+  echo "❌ YOLO service failed to start."
+  sudo systemctl status yolo-prod.service --no-pager
   exit 1
 fi
 
 # === OpenTelemetry Collector Setup ===
 echo "📡 Installing OpenTelemetry Collector..."
+
+# Free up disk space before install
+echo "🧹 Cleaning up disk space..."
+sudo apt-get clean
+sudo rm -rf /var/lib/apt/lists/*
+sudo rm -rf /var/log/*.gz /var/log/*.1 /var/log/journal/*
+sudo journalctl --vacuum-time=1d
+sudo apt-get autoremove -y
+
+# Check free space
+FREE_MB=$(df / | awk 'NR==2 {print $4 / 1024}')
+echo "📦 Free space available: ${FREE_MB} MB"
+if (( $(echo "$FREE_MB < 500" | bc -l) )); then
+  echo "❌ Not enough disk space (<500MB). Aborting otelcol install."
+  df -h
+  exit 1
+fi
+
+# Clean previous otelcol if it exists
+echo "🧹 Cleaning previous otelcol install (if any)..."
+sudo systemctl stop otelcol || true
+sudo rm -f /usr/bin/otelcol
+sudo rm -f /etc/systemd/system/otelcol.service
+sudo rm -rf /etc/otelcol
+
+# Download and install otelcol
 sudo apt-get update
 sudo apt-get -y install wget
-wget https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.127.0/otelcol_0.127.0_linux_amd64.deb
-sudo dpkg -i otelcol_0.127.0_linux_amd64.deb
+wget -O otelcol.deb https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.127.0/otelcol_0.127.0_linux_amd64.deb
+sudo dpkg -i otelcol.deb
 
 # Configure OpenTelemetry Collector
 echo "📝 Configuring OpenTelemetry Collector..."
+sudo mkdir -p /etc/otelcol
 sudo tee /etc/otelcol/config.yaml > /dev/null <<EOF
 receivers:
   hostmetrics:
@@ -93,15 +105,14 @@ service:
       exporters: [prometheus]
 EOF
 
+# Reload and restart otelcol
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable otelcol
-
-# Restart the OpenTelemetry Collector service
 echo "🔁 Restarting OpenTelemetry Collector..."
 sudo systemctl restart otelcol
 
-# Check if otelcol is running
+# Final check
 if systemctl is-active --quiet otelcol; then
   echo "✅ OpenTelemetry Collector is running!"
 else
