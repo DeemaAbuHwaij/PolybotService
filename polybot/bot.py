@@ -6,7 +6,9 @@ import time
 from telebot.types import InputFile
 from polybot.img_proc import Img
 import requests
-
+import logging
+import boto3
+from botocore.exceptions import ClientError
 
 class Bot:
 
@@ -58,7 +60,29 @@ class QuoteBot(Bot):
         if msg["text"] != 'Please don\'t quote me':
             self.send_text_with_quote(msg['chat']['id'], msg["text"], quoted_msg_id=msg["message_id"])
 
-print("🔁 bot.py updated and deployed!")
+
+def upload_file(file_name, bucket, object_name=None):
+    """Upload a file to an S3 bucket
+
+    :param file_name: File to upload
+    :param bucket: Bucket to upload to
+    :param object_name: S3 object name. If not specified then file_name is used
+    :return: True if file was uploaded, else False
+    """
+
+    # If S3 object_name was not specified, use file_name
+    if object_name is None:
+        object_name = os.path.basename(file_name)
+
+    # Upload the file
+    s3_client = boto3.client('s3')
+    try:
+        response = s3_client.upload_file(file_name, bucket, object_name)
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
+
 
 class ImageProcessingBot(Bot):
     def __init__(self, token, telegram_chat_url):
@@ -171,14 +195,36 @@ class ImageProcessingBot(Bot):
                     img.segment()
                 elif caption == 'salt and pepper':
                     img.salt_n_pepper()
+
+                # ⬅️ Add this block to save and send result for local filters
+                if caption in ['blur', 'contour', 'rotate', 'segment', 'salt and pepper']:
+                    output_path = img.save_img()
+                    self.send_photo(chat_id, output_path)
+                    self.send_text(chat_id, f"💥 Your photo has been *{caption}ed* successfully!")
+                    print(f"Processed and sent photo with filter '{caption}'")
+                    return
+
                 elif caption == 'detect':
                     try:
                         output_path = img.save_img()
-                        yolo_url = "http://10.0.1.66:8080/predict"
+                        image_name = os.path.basename(output_path)
 
-                        with open(output_path, 'rb') as f:
-                            response = requests.post(yolo_url, files={"file": f})
-                            response.raise_for_status()
+                        # Upload image to S3 using the fixed upload_file() function
+                        s3_key = f"{chat_id}/original/{image_name}"
+                        bucket = os.getenv("AWS_S3_BUCKET")
+                        if not bucket:
+                            raise ValueError("❌ AWS_S3_BUCKET environment variable is not set.")
+                        success = upload_file(output_path, "deema-polybot-images", s3_key)
+                        if not success:
+                            raise RuntimeError("❌ Upload to S3 failed")
+
+                        # Send only image_name and chat_id to YOLO
+                        yolo_url = "http://127.0.0.1:8081/predict"
+                        response = requests.post(yolo_url, json={
+                            "image_name": image_name,
+                            "chat_id": chat_id
+                        })
+                        response.raise_for_status()
 
                         data = response.json()
                         labels = data.get("labels", [])
@@ -187,13 +233,13 @@ class ImageProcessingBot(Bot):
                         else:
                             reply_message = "🔍 No objects detected."
 
-                        self.send_photo(chat_id, output_path)
                         self.send_text(chat_id, reply_message)
                         self.send_text(chat_id, "💥 Your photo has been *detected* successfully!")
                         print("Processed and sent photo with filter 'detect'")
                         return
+
                     except Exception as e:
-                        logger.error(f"Failed to get predictions from YOLO: {e}")
+                        logger.error(f"❌ Detection failed: {e}")
                         self.send_text(chat_id, "❗ Error occurred while contacting YOLO service.")
                         return
                 else:
@@ -201,10 +247,6 @@ class ImageProcessingBot(Bot):
                                    "Unsupported filter! Try: Blur, Contour, Rotate, Segment, Salt and pepper, Detect, Concat.")
                     return
 
-                output_path = img.save_img()
-                self.send_photo(chat_id, output_path)
-                self.send_text(chat_id, f"💥 Your photo has been {caption}ed successfully!")
-                print(f"Processed and sent photo with filter '{caption}'")
 
             else:
                 self.send_text(chat_id, "Unsupported message type. Please send a photo with a caption.")
