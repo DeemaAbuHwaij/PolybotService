@@ -19,17 +19,14 @@ if [ ! -d "$VENV_PATH" ]; then
   python3 -m venv "$VENV_PATH"
 fi
 
+
 # Activate venv and install dependencies
 echo "📦 Installing requirements..."
 source "$VENV_PATH/bin/activate"
 pip install --upgrade pip
 pip install -r "$PROJECT_DIR/polybot/requirements.txt"
 
-# Check if .env exists
-if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ .env file missing at $ENV_FILE"
-  exit 1
-fi
+
 
 # Copy systemd service file
 echo "⚙️ Copying $SERVICE_FILE to systemd..."
