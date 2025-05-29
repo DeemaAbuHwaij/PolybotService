@@ -93,6 +93,10 @@ service:
       exporters: [prometheus]
 EOF
 
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable otelcol
+
 # Restart the OpenTelemetry Collector service
 echo "🔁 Restarting OpenTelemetry Collector..."
 sudo systemctl restart otelcol
