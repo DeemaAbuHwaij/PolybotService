@@ -36,5 +36,5 @@ jobs:
             git checkout dev
 
             echo "🚀 Running deploy-dev.sh ..."
-            bash deploy-dev.sh
+            bash ./deploy-dev.sh
           EOF
