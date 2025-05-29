@@ -2,7 +2,7 @@
 set -e
 
 PROJECT_DIR="$(pwd)"
-SERVICE_FILE="polybot.service"
+SERVICE_FILE="polybot-dev.service"
 VENV_PATH="$PROJECT_DIR/venv"
 ENV_FILE="$PROJECT_DIR/.env"
 
