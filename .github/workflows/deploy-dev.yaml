@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up SSH and deploy to EC2
+      - name: Set up SSH and deploy to Polybot EC2
         env:
           PRIVATE_KEY: ${{ secrets.DEEMA_KEY }}
           EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
@@ -24,9 +24,7 @@ jobs:
 
           echo "🔐 Connecting to $EC2_USER@$EC2_HOST ..."
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << 'EOF'
-            set -e
-
-            cd /home/ubuntu || exit 1
+            cd /home/ubuntu
 
             echo "📂 Checking Polybot repo..."
             if [ ! -d "polybot-dev" ]; then
@@ -34,29 +32,9 @@ jobs:
             fi
 
             cd polybot-dev
-            git checkout dev
             git pull origin dev
+            git checkout dev
 
-            echo "🐍 Setting up Python environment..."
-            sudo apt-get update
-            sudo apt-get install -y python3-venv python3-pip
-
-            if [ ! -d "venv" ]; then
-              python3 -m venv venv
-            fi
-
-            source venv/bin/activate
-            pip install --upgrade pip
-            pip install -r polybot/requirements.txt
-
-            echo "🛠️ Setting up polybot-dev.service..."
-            if [ ! -f "/etc/systemd/system/polybot-dev.service" ]; then
-              sudo cp polybot-dev.service /etc/systemd/system/
-              sudo systemctl daemon-reload
-              sudo systemctl enable polybot-dev.service
-            fi
-
-            echo "🚀 Restarting polybot-dev service..."
-            sudo systemctl restart polybot-dev.service
-            sudo systemctl status polybot-dev.service
+            echo "🚀 Running deploy-dev.sh ..."
+            bash deploy-dev.sh
           EOF
