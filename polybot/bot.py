@@ -214,7 +214,7 @@ class ImageProcessingBot(Bot):
                         bucket = os.getenv("AWS_S3_BUCKET")
                         if not bucket:
                             raise ValueError("❌ AWS_S3_BUCKET environment variable is not set.")
-                        success = upload_file(output_path, "deema-polybot-images", s3_key)
+                        success = upload_file(output_path, bucket, s3_key)
                         if not success:
                             raise RuntimeError("❌ Upload to S3 failed")
 
