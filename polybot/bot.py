@@ -14,7 +14,6 @@ class Bot:
 
     def __init__(self, token, telegram_chat_url):
         self.telegram_bot_client = telebot.TeleBot(token)
-        self.telegram_bot_client.remove_webhook()
         time.sleep(0.5)
         self.telegram_bot_client.set_webhook(
             url=f'{telegram_chat_url}/{token}/',
@@ -207,13 +206,12 @@ class ImageProcessingBot(Bot):
                     self.send_text(chat_id, f"💥 Your photo has been *{caption}ed* successfully!")
                     print(f"Processed and sent photo with filter '{caption}'")
                     return
-
                 elif caption == 'detect':
                     try:
                         output_path = img.save_img()
                         image_name = os.path.basename(output_path)
 
-                        # Upload image to S3 using the fixed upload_file() function
+                        # Upload original image to S3
                         s3_key = f"{chat_id}/original/{image_name}"
                         bucket = os.getenv("AWS_S3_BUCKET")
                         if not bucket:
@@ -223,14 +221,31 @@ class ImageProcessingBot(Bot):
                             raise RuntimeError("❌ Upload to S3 failed")
 
                         # Send only image_name and chat_id to YOLO
-                        yolo_url = "http://127.0.0.1:8081/predict"
+                        yolo_url = os.environ.get("YOLO_URL", "http://127.0.0.1:8080/predict")
                         response = requests.post(yolo_url, json={
                             "image_name": image_name,
                             "chat_id": chat_id
                         })
                         response.raise_for_status()
-
                         data = response.json()
+
+                        # 💡 Additional check for the predicted image
+                        predicted_path = os.path.join("uploads/predicted", os.path.basename(output_path))
+                        print(f"🧪 Checking predicted_path: {predicted_path}")
+                        print(f"🧪 File exists before S3 upload? {os.path.exists(predicted_path)}")
+
+                        # Upload predicted image to S3
+                        if os.path.exists(predicted_path):
+                            predicted_key = f"{chat_id}/predicted/{image_name}"
+                            success = upload_file(predicted_path, bucket, predicted_key)
+                            if success:
+                                print(f"✅ Uploaded predicted image to s3://{bucket}/{predicted_key}")
+                            else:
+                                print("❌ Failed to upload predicted image to S3")
+                        else:
+                            print("❌ Predicted image not found, skipping upload")
+
+                        # Build and send detection result
                         labels = data.get("labels", [])
                         if labels:
                             reply_message = "🧠 Detected objects: " + ", ".join(labels)
