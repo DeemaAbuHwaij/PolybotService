@@ -15,12 +15,21 @@ class Bot:
     def __init__(self, token, telegram_chat_url):
         self.telegram_bot_client = telebot.TeleBot(token)
         time.sleep(0.5)
-        self.telegram_bot_client.set_webhook(
-            url=f'{telegram_chat_url}/{token}/',
-            certificate=open('/home/ubuntu/PolybotService/polybot.crt', 'r'),
-            timeout=60
-        )
-        logger.info(f'Telegram Bot information\n\n{self.telegram_bot_client.get_me()}')
+
+        expected_url = f'{telegram_chat_url}/{token}/'
+        info = self.telegram_bot_client.get_webhook_info()
+
+        if info.url != expected_url:
+            logger.info(f"🔄 Setting webhook to: {expected_url}")
+            self.telegram_bot_client.set_webhook(
+                url=expected_url,
+                certificate=open('/home/ubuntu/PolybotService/polybot.crt', 'r'),
+                timeout=60
+            )
+        else:
+            logger.info(f"✅ Webhook already set: {info.url}")
+
+        logger.info(f'Telegram Bot info:\n\n{self.telegram_bot_client.get_me()}')
 
     def send_text(self, chat_id, text):
         self.telegram_bot_client.send_message(chat_id, text)
