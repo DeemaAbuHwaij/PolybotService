@@ -2,7 +2,7 @@
 set -e
 
 PROJECT_DIR="$(pwd)"
-SERVICE_FILE="polybot.service"
+SERVICE_FILE="polybot-dev.service"
 VENV_PATH="$PROJECT_DIR/venv"
 ENV_FILE="$PROJECT_DIR/.env"
 
@@ -19,17 +19,14 @@ if [ ! -d "$VENV_PATH" ]; then
   python3 -m venv "$VENV_PATH"
 fi
 
+
 # Activate venv and install dependencies
 echo "📦 Installing requirements..."
 source "$VENV_PATH/bin/activate"
 pip install --upgrade pip
 pip install -r "$PROJECT_DIR/polybot/requirements.txt"
 
-# Check if .env exists
-if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ .env file missing at $ENV_FILE"
-  exit 1
-fi
+
 
 # Copy systemd service file
 echo "⚙️ Copying $SERVICE_FILE to systemd..."
@@ -39,17 +36,8 @@ sudo cp "$PROJECT_DIR/$SERVICE_FILE" /etc/systemd/system/
 echo "🔁 Reloading and restarting Polybot service..."
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
-sudo systemctl restart polybot-prod.service
-sudo systemctl enable polybot-prod.service
-
-# Check if service is running
-if systemctl is-active --quiet polybot-prod.service; then
-  echo "✅ Polybot service is running!"
-else
-  echo "❌ Polybot service failed to start."
-  sudo systemctl status polybot-prod.service --no-pager
-  exit 1
-fi
+sudo systemctl restart polybot-dev.service
+sudo systemctl enable polybot-dev.service
 
 # Check if service is running
 if systemctl is-active --quiet polybot-dev.service; then
@@ -93,19 +81,6 @@ service:
       exporters: [prometheus]
 EOF
 
-sudo systemctl daemon-reexec
-sudo systemctl daemon-reload
-sudo systemctl enable otelcol
-
 # Restart the OpenTelemetry Collector service
 echo "🔁 Restarting OpenTelemetry Collector..."
 sudo systemctl restart otelcol
-
-# Check if otelcol is running
-if systemctl is-active --quiet otelcol; then
-  echo "✅ OpenTelemetry Collector is running!"
-else
-  echo "❌ otelcol failed to start."
-  sudo systemctl status otelcol --no-pager
-  exit 1
-fi

@@ -16,7 +16,12 @@ class Bot:
         self.telegram_bot_client = telebot.TeleBot(token)
         self.telegram_bot_client.remove_webhook()
         time.sleep(0.5)
-        self.telegram_bot_client.set_webhook(url=f'{telegram_chat_url}/{token}/', timeout=60)
+        cert_path = os.path.join(os.path.dirname(__file__), 'certs', 'polybot.crt')
+        self.telegram_bot_client.set_webhook(
+            url=f'{telegram_chat_url}/{token}/',
+            certificate=open(cert_path, 'r'),
+            timeout=60
+        )
         logger.info(f'Telegram Bot information\n\n{self.telegram_bot_client.get_me()}')
 
     def send_text(self, chat_id, text):

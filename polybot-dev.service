@@ -3,11 +3,15 @@ Description=Polybot Dev Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/env python3 -m polybot.app
+ExecStart=/home/ubuntu/PolybotService/venv/bin/python -m polybot.app
 WorkingDirectory=/home/ubuntu/PolybotService
 Restart=always
 User=ubuntu
 Environment="ENV=development"
+Environment=TELEGRAM_BOT_TOKEN=8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc
+Environment=YOLO_URL=http://10.0.1.66:8080/predict
+Environment="BOT_APP_URL=https://54.219.141.33/8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc/"
+
 
 [Install]
 WantedBy=multi-user.target
