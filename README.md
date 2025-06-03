@@ -385,6 +385,3 @@ If you enjoy using the bot, feel free to ⭐️ the repo, share it, or suggest n
 [python_project_pythonimage]: https://exit-zero-academy.github.io/DevOpsTheHardWayAssets/img/python_project_pythonimage.png
 [python_project_webhook1]: https://exit-zero-academy.github.io/DevOpsTheHardWayAssets/img/python_project_webhook1.png
 [python_project_webhook2]: https://exit-zero-academy.github.io/DevOpsTheHardWayAssets/img/python_project_webhook2.png
-
-
-
