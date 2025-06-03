@@ -10,7 +10,7 @@ User=ubuntu
 Environment="ENV=development"
 Environment=TELEGRAM_BOT_TOKEN=8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc
 Environment=YOLO_URL=http://10.0.0.5:8080/predict
-Environment="BOT_APP_URL=https://deema.fursa.click/8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc/"
+Environment="BOT_APP_URL=https://proxydeema.fursa.click/8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc/"
 
 
 [Install]
