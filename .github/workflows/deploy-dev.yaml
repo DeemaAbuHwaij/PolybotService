@@ -55,6 +55,12 @@ jobs:
             echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env
             echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
 
+            echo "📦 .env content:"
+            cat .env
+
+            echo "🛠 Running Docker Compose"
+            docker compose --env-file .env -f docker-compose.yaml config
+
             docker compose --env-file .env -f docker-compose.yaml pull
             docker compose --env-file .env -f docker-compose.yaml down
             docker compose --env-file .env -f docker-compose.yaml up -d
