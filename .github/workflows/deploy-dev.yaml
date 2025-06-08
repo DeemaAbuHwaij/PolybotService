@@ -40,26 +40,22 @@ jobs:
           echo "$PRIVATE_KEY" > key.pem
           chmod 400 key.pem
 
-          # Write .env file LOCALLY with interpolated value
-          echo "IMG_NAME=${{ inputs.image }}" > .env
-          echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env
-          echo "TELEGRAM_APP_URL=$TELEGRAM_APP_URL" >> .env
+          # ✅ Prepare .env file by substituting IMG_NAME into the template
+          export IMG_NAME=${{ inputs.image }}
+          envsubst < .env.template > .env
 
-          echo "📦 .env to be sent:"
+          echo "📦 Final local .env content:"
           cat .env
 
-          # Upload to EC2
+          # ✅ Upload both config files to EC2
           scp -i key.pem -o StrictHostKeyChecking=no .env $EC2_USER@$EC2_HOST:/home/ubuntu/.env
           scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.yaml
 
-          # Run Compose
+          # ✅ Run Docker Compose remotely
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << 'EOF'
             cd /home/ubuntu
 
-            echo "📥 Remote .env content:"
-            cat .env
-
-            echo "⚙️ Compose config:"
+            echo "⚙️ Docker Compose config:"
             docker compose --env-file .env -f docker-compose.yaml config
 
             docker compose --env-file .env -f docker-compose.yaml pull
