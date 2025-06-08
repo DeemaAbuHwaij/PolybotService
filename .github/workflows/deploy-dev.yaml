@@ -20,25 +20,26 @@ jobs:
           echo "${{ secrets.DEEMA_KEY }}" > key.pem
           chmod 400 key.pem
 
+          IMAGE_NAME=${{ inputs.image }}
+          TELEGRAM_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+          APP_URL=https://proxydeema.fursa.click
+
           echo "🔐 Connecting to EC2 and deploying..."
-          head -n 2 key.pem
           ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_DEV_HOST }} << EOF
             set -e
 
-            # Clone or update repo
+            echo "📁 Cloning or updating repo..."
             cd /home/ubuntu/polybot-dev || git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev && cd polybot-dev
             git checkout dev
             git pull origin dev
 
-            # Write .env file
-            echo "💾 Writing .env file..."
+            echo "💾 Writing .env.dev file..."
             cat <<EOT > .env.dev
-            IMG_NAME=${{ inputs.image }}
-            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-            TELEGRAM_APP_URL=https://proxydeema.fursa.click
+            IMG_NAME=$IMAGE_NAME
+            TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN
+            TELEGRAM_APP_URL=$APP_URL
           EOT
 
-            # Run Docker Compose
             echo "🐳 Pulling and starting containers..."
             docker compose -f docker-compose.yaml pull
             docker compose -f docker-compose.yaml up -d --remove-orphans
