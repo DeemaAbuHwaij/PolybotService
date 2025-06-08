@@ -42,23 +42,23 @@ jobs:
           echo "$PRIVATE_KEY" > key.pem
           chmod 400 key.pem
 
-          # 💡 Create .env file locally with fully expanded image
+          # ✅ Write .env file locally on the runner
           echo "IMG_NAME=${{ inputs.image }}" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
           echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
 
-          echo "📦 Final .env content:"
+          echo "📦 .env content:"
           cat .env
 
-          # 📤 Send everything to EC2
+          # ✅ Upload BOTH files to EC2
           scp -i key.pem -o StrictHostKeyChecking=no .env $EC2_USER@$EC2_HOST:/home/ubuntu/.env
           scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.yaml
 
-          # 🚀 Run remote Docker Compose
+          # ✅ Now run Docker Compose remotely
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << 'EOF'
             cd /home/ubuntu
 
-            echo "🧪 Running docker compose config:"
+            echo "🛠 Docker Compose config:"
             docker compose --env-file .env -f docker-compose.yaml config
 
             docker compose --env-file .env -f docker-compose.yaml pull
