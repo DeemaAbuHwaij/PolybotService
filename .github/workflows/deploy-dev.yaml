@@ -1,9 +1,11 @@
-name: Polybot Dev Deploy
+name: Polybot Deploy Dev
 
 on:
-  push:
-    branches:
-      - dev
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -13,28 +15,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up SSH and deploy to Polybot EC2
+      - name: Set up SSH and deploy to EC2
         env:
           PRIVATE_KEY: ${{ secrets.DEEMA_KEY }}
           EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           echo "$PRIVATE_KEY" > key.pem
           chmod 400 key.pem
 
-          echo "🔐 Connecting to $EC2_USER@$EC2_HOST ..."
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << 'EOF'
-            cd /home/ubuntu
+          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
+            cd /home/ubuntu/polybot-dev || git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev && cd polybot-dev
 
-            echo "📂 Checking Polybot repo..."
-            if [ ! -d "polybot-dev" ]; then
-              git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev
-            fi
-
-            cd polybot-dev
-            git pull origin dev
             git checkout dev
+            git pull origin dev
 
-            echo "🚀 Running deploy-dev.sh ..."
-            bash ./deploy-dev.sh
+            echo "💾 Writing .env file..."
+            echo "IMG_NAME=${{ inputs.image }}" > .env
+            echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+            echo "TELEGRAM_APP_URL=proxydeema.fursa.click" >> .env
+
+            echo "🔄 Running Docker Compose..."
+            docker compose -f docker-compose.dev.yaml pull
+            docker compose -f docker-compose.dev.yaml up -d --remove-orphans
           EOF

@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  polybot:
+    image: ${IMG_NAME}
+    container_name: polybot
+    restart: always
+    ports:
+      - "8443:8443"
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_APP_URL: ${TELEGRAM_APP_URL}
+      YOLO_URL: http://yolo:8080/predict
+    working_dir: /app
+    command: python3 -m polybot.app
+
+  yolo:
+    image: deemaa/yolo-dev:latest  # or deemaa/yolo-prod:latest in prod
+    container_name: yolo
+    restart: always
+    ports:
+      - "8080:8080"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx-config:/etc/nginx/conf.d
+      - ./certs:/etc/nginx/certs
