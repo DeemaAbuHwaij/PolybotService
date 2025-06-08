@@ -46,7 +46,7 @@ jobs:
 
           echo "🌐 SSH to $EC2_USER@$EC2_HOST"
 
-          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.dev.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.dev.yaml
+          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.dev.yaml
 
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
             cd /home/ubuntu
@@ -56,7 +56,7 @@ jobs:
             echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env
             echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
 
-            docker compose --env-file .env -f docker-compose.dev.yaml pull
-            docker compose --env-file .env -f docker-compose.dev.yaml down
-            docker compose --env-file .env -f docker-compose.dev.yaml up -d
+            docker compose --env-file .env -f docker-compose.yaml pull
+            docker compose --env-file .env -f docker-compose.yaml down
+            docker compose --env-file .env -f docker-compose.yaml up -d
           EOF
