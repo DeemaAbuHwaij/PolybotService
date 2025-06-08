@@ -1,7 +1,23 @@
+# .github/workflows/deploy-dev.yaml
 name: Polybot Deploy Dev
 
 on:
   workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
+    secrets:
+      SSH_PRIVATE_KEY:
+        required: true
+      EC2_HOST:
+        required: true
+      EC2_USERNAME:
+        required: true
+      TELEGRAM_BOT_TOKEN:
+        required: true
+
+  workflow_dispatch:
     inputs:
       image:
         required: true
@@ -11,33 +27,36 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USERNAME }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up SSH and deploy to EC2
+      - name: SSH and Deploy
         env:
-          PRIVATE_KEY: ${{ secrets.DEEMA_KEY }}
-          EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          IMAGE: ${{ inputs.image }}
         run: |
           echo "$PRIVATE_KEY" > key.pem
           chmod 400 key.pem
 
+          echo "🌐 SSH to $EC2_USER@$EC2_HOST"
+
+          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.dev.yaml
+
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
-            cd /home/ubuntu/polybot-dev || git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev && cd polybot-dev
+            cd /home/ubuntu
 
-            git checkout dev
-            git pull origin dev
+            echo "✅ Writing .env file"
+            echo "IMG_NAME=$IMAGE" > .env
+            echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env
+            echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
 
-            echo "💾 Writing .env file..."
-            echo "IMG_NAME=${{ inputs.image }}" > .env
-            echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
-            echo "TELEGRAM_APP_URL=proxydeema.fursa.click" >> .env
-
-            echo "🔄 Running Docker Compose..."
-            docker compose -f docker-compose.yaml pull
-            docker compose -f docker-compose.yaml up -d --remove-orphans
+            docker compose --env-file .env -f docker-compose.yaml pull
+            docker compose --env-file .env -f docker-compose.yaml down
+            docker compose --env-file .env -f docker-compose.yaml up -d
           EOF
-

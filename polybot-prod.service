@@ -7,10 +7,11 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/PolybotService
 ExecStart=/usr/bin/env python3 -m polybot.app
 Restart=always
-
-Environment=BOT_APP_URL=https://62e7-54-183-125-83.ngrok-free.app
+Environment="ENV=development"
+Environment=BOT_APP_URL=https://proxydeema.fursa.click:8443/7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0/
 Environment=TELEGRAM_BOT_TOKEN=7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0
 Environment=YOLO_URL=http://10.0.1.66:8080/predict
+
 
 [Install]
 WantedBy=multi-user.target
