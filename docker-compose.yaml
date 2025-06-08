@@ -10,13 +10,13 @@ services:
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_APP_URL: ${TELEGRAM_APP_URL}
-      YOLO_URL: http://yolo:8080/predict
+      YOLO_URL: http://10.0.0.5:8080/predict
     working_dir: /app
     command: python3 -m polybot.app
 
   yolo:
-    image: deemaa/yolo-dev:latest  # or deemaa/yolo-prod:latest in prod
-    container_name: yolo
+    image: deemaa/polybot-dev:latest  # or deemaa/yolo-prod:latest in prod
+    container_name: polybot
     restart: always
     ports:
       - "8080:8080"
