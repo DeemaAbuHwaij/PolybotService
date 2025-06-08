@@ -48,15 +48,27 @@ jobs:
 
           scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.yaml
 
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
-            cd /home/ubuntu
+          - name: SSH and Deploy
+            env:
+              IMAGE: ${{ inputs.image }}
+            run: |
+              echo "$PRIVATE_KEY" > key.pem
+              chmod 400 key.pem
 
-            echo "✅ Writing .env file"
-            echo "IMG_NAME=\"${{ inputs.image }}\"" > .env
-            echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env
-            echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
+              echo "🌐 SSH to $EC2_USER@$EC2_HOST"
 
-            docker compose --env-file .env -f docker-compose.yaml pull
-            docker compose --env-file .env -f docker-compose.yaml down
-            docker compose --env-file .env -f docker-compose.yaml up -d
-          EOF
+              # Generate remote .env locally
+              echo "IMG_NAME=\"$IMAGE\"" > .env
+              echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env
+              echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
+
+              # Upload both files
+              scp -i key.pem -o StrictHostKeyChecking=no .env docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/
+
+              # SSH and run Docker Compose
+              ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << 'EOF'
+                cd /home/ubuntu
+                docker compose --env-file .env -f docker-compose.yaml pull
+                docker compose --env-file .env -f docker-compose.yaml down
+                docker compose --env-file .env -f docker-compose.yaml up -d
+              EOF
