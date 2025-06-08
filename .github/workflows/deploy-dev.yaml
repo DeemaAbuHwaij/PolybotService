@@ -21,9 +21,9 @@ jobs:
 
       - name: Debug secrets
         run: |
-          echo "🧪 EC2_HOST=${{ secrets.EC2_DEV_HOST }}"
+          echo "🧪 EC2_DEV_HOST=${{ secrets.EC2_DEV_HOST }}"
           echo "🧪 EC2_USER=${{ secrets.EC2_USER }}"
-          echo "🧪 DEEMA_KEY is set? -> ${{ secrets.DEEMA_KEY != '' }}"
+          echo "🧪 DEEMA_KEY is set? ${{ secrets.DEEMA_KEY != '' }}"
 
       - name: Configure SSH access
         env:
@@ -35,19 +35,32 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/private_key
           chmod 600 ~/.ssh/private_key
 
+          echo "🔍 EC2_HOST=$EC2_HOST"
+          echo "🔍 EC2_USER=$EC2_USER"
+
           cat > ~/.ssh/config <<EOF
           Host ec2
-              HostName $EC2_HOST
-              User $EC2_USER
-              IdentityFile ~/.ssh/private_key
-              StrictHostKeyChecking no
-          EOF
+          HostName ${EC2_HOST}
+          User ${EC2_USER}
+          IdentityFile ~/.ssh/private_key
+          StrictHostKeyChecking no
+      
 
       - name: Clone or pull the repo on EC2
         run: |
-          ssh -F ~/.ssh/config ec2 "if [ -d ~/polybot-dev ]; then cd ~/polybot-dev && git pull; else git clone $REPO_URL ~/polybot-dev; fi"
+          ssh -F ~/.ssh/config ec2 "
+            if [ -d ~/polybot-dev ]; then
+              echo '📂 Repo exists, pulling latest...'
+              cd ~/polybot-dev && git pull
+            else
+              echo '📥 Cloning repo...'
+              git clone $REPO_URL ~/polybot-dev
+            fi
+          "
 
       - name: Deploy Polybot with Docker Compose
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           ssh -F ~/.ssh/config ec2 <<'EOF'
             set -e
@@ -56,7 +69,7 @@ jobs:
             echo "💾 Writing .env.dev file..."
             cat <<EOT > .env.dev
             IMG_NAME=${{ inputs.image }}
-            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
             TELEGRAM_APP_URL=https://proxydeema.fursa.click
           EOT
 
