@@ -21,6 +21,7 @@ jobs:
           chmod 400 key.pem
 
           echo "🔐 Connecting to EC2 and deploying..."
+          head -n 2 key.pem
           ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_DEV_HOST }} << EOF
             set -e
 
