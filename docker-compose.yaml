@@ -14,7 +14,7 @@ services:
     command: python3 -m polybot.app
 
   yolo:
-    image: deemaa/polybot-dev:latest  # or deemaa/yolo-prod:latest in prod
+    image: deemaa/yolo-dev:latest  # or deemaa/yolo-prod:latest in prod
     container_name: polybot
     restart: always
     ports:

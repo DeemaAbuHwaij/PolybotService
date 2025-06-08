@@ -52,7 +52,7 @@ jobs:
             cd /home/ubuntu
 
             echo "✅ Writing .env file"
-            echo "IMG_NAME=$IMAGE" > .env
+            echo "IMG_NAME=\"${{ inputs.image }}\"" > .env
             echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env
             echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
 
