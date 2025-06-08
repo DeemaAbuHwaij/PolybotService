@@ -30,12 +30,16 @@ jobs:
         run: |
           if [ -z "${{ secrets.EC2_USERNAME }}" ]; then echo "❌ EC2_USERNAME is missing!"; else echo "✅ EC2_USERNAME is set."; fi
           if [ -z "${{ secrets.EC2_HOST }}" ]; then echo "❌ EC2_HOST is missing!"; else echo "✅ EC2_HOST is set."; fi
+      - name: Echo secrets with redaction
+        run: |
+          echo "EC2_USERNAME: ***${{ secrets.EC2_USERNAME != '' }}"  # should print true
+          echo "EC2_HOST: ***${{ secrets.EC2_HOST != '' }}"          # should print true
 
       - name: SSH and Deploy
         env:
           PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          EC2_USER: ${{ secrets.EC2_USERNAME }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ubuntu
+          EC2_HOST: 54.183.125.83
           IMAGE: ${{ inputs.image }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
