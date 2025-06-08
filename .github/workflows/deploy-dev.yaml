@@ -1,4 +1,3 @@
-# .github/workflows/deploy-dev.yaml
 name: Polybot Deploy Dev
 
 on:
