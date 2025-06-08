@@ -7,27 +7,22 @@ on:
         required: true
         type: string
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Docker image name to deploy"
+        required: true
+        type: string
 
-    env:
-      REPO_NAME: PolybotService
-      REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Print EC2 host and user
-        env:
-          EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-        run: |
-          echo "✅ EC2_HOST=$EC2_HOST"
-          echo "✅ EC2_USER=$EC2_USER"
-
-      - name: Configure SSH access
+      - name: Setup SSH access to EC2
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEEMA_KEY }}
           EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
@@ -39,40 +34,27 @@ jobs:
 
           cat > ~/.ssh/config <<EOF
           Host ec2
-          HostName ${EC2_HOST}
-          User ${EC2_USER}
+          HostName $EC2_HOST
+          User $EC2_USER
           IdentityFile ~/.ssh/private_key
           StrictHostKeyChecking no
-      
 
-      - name: Clone or pull the repo on EC2
-        run: |
-          ssh -F ~/.ssh/config ec2 "
-            if [ -d ~/polybot-dev ]; then
-              echo '📂 Repo exists, pulling latest...'
-              cd ~/polybot-dev && git pull
-            else
-              echo '📥 Cloning repo...'
-              git clone $REPO_URL ~/polybot-dev
-            fi
-          "
-
-      - name: Deploy Polybot with Docker Compose
+      - name: Deploy Docker image to EC2
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
-          ssh -F ~/.ssh/config ec2 <<'EOF'
+          ssh -F ~/.ssh/config ec2 << 'EOF'
             set -e
-            cd ~/polybot-dev
+            cd ~/polybot-dev || git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev && cd polybot-dev
 
-            echo "💾 Writing .env.dev file..."
+            echo "💾 Writing .env.dev..."
             cat <<EOT > .env.dev
             IMG_NAME=${{ inputs.image }}
             TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
             TELEGRAM_APP_URL=https://proxydeema.fursa.click
           EOT
 
-            echo "🐳 Running Docker Compose..."
-            docker compose -f docker-compose.yaml pull
-            docker compose -f docker-compose.yaml up -d --remove-orphans
-          EOF
+            echo "🐳 Deploying with docker-compose..."
+            docker compose -f docker-compose.dev.yaml pull
+            docker compose -f docker-compose.dev.yaml up -d --remove-orphans
+EOF
