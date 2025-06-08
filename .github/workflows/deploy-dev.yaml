@@ -25,36 +25,40 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     env:
       PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       EC2_HOST: ${{ secrets.EC2_HOST }}
       EC2_USER: ${{ secrets.EC2_USERNAME }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_APP_URL: https://proxydeema.fursa.click
+      IMAGE: ${{ inputs.image }}   # ✅ Move IMAGE here, not inside step!
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: SSH and Deploy
         run: |
           echo "$PRIVATE_KEY" > key.pem
           chmod 400 key.pem
 
-          # ✅ Prepare .env file using substitution
-          sed "s|\${IMG_NAME}|${{ inputs.image }}|g" .env.template > .env
+          # ✅ Write .env file locally on the runner
+          echo "IMG_NAME=${{ inputs.image }}" > .env
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+          echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
 
-          echo "📦 Final local .env content:"
+          echo "📦 .env content:"
           cat .env
 
-          # ✅ Upload files to EC2
+          # ✅ Upload BOTH files to EC2
           scp -i key.pem -o StrictHostKeyChecking=no .env $EC2_USER@$EC2_HOST:/home/ubuntu/.env
           scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.yaml
 
-          # ✅ Run Docker Compose remotely
+          # ✅ Now run Docker Compose remotely
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << 'EOF'
             cd /home/ubuntu
 
-            echo "⚙️ Docker Compose config:"
+            echo "🛠 Docker Compose config:"
             docker compose --env-file .env -f docker-compose.yaml config
 
             docker compose --env-file .env -f docker-compose.yaml pull
