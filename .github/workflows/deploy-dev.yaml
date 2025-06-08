@@ -22,19 +22,20 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
-          echo "🔍 First 2 lines of SSH_PRIVATE_KEY:"
-          echo "$SSH_PRIVATE_KEY" | head -n 2
-
-          echo "🔐 Writing key.pem safely..."
-          printf "%s" "$SSH_PRIVATE_KEY" > key.pem
-          chmod 400 key.pem
+          echo "🔐 Writing private key to ~/.ssh/private_key..."
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/private_key
+          chmod 400 ~/.ssh/private_key
+          head -n 2 ~/.ssh/private_key
 
           IMAGE_NAME=${{ inputs.image }}
           APP_URL=https://proxydeema.fursa.click
 
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
+          echo "🔗 Attempting SSH connection..."
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/private_key $EC2_USER@$EC2_HOST << EOF
             set -e
 
+            echo "✅ SSH successful. Cloning repo..."
             cd /home/ubuntu/polybot-dev || git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev && cd polybot-dev
             git checkout dev
             git pull origin dev
@@ -46,6 +47,7 @@ jobs:
             TELEGRAM_APP_URL=$APP_URL
           EOT
 
+            echo "🐳 Deploying containers..."
             docker compose -f docker-compose.yaml pull
             docker compose -f docker-compose.yaml up -d --remove-orphans
           EOF
