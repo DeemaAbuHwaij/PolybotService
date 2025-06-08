@@ -46,7 +46,7 @@ jobs:
 
           echo "🌐 SSH to $EC2_USER@$EC2_HOST"
 
-          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.dev.yaml
+          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.yaml
 
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
             cd /home/ubuntu
