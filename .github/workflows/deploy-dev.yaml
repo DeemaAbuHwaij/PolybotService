@@ -11,46 +11,56 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      REPO_NAME: PolybotService
+      REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up SSH and deploy to EC2
+      - name: Debug secrets
+        run: |
+          echo "🧪 EC2_HOST=${{ secrets.EC2_DEV_HOST }}"
+          echo "🧪 EC2_USER=${{ secrets.EC2_USER }}"
+          echo "🧪 DEEMA_KEY is set? -> ${{ secrets.DEEMA_KEY != '' }}"
+
+      - name: Configure SSH access
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEEMA_KEY }}
-          EC2_USER: ${{ secrets.EC2_USER }}
           EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-          echo "🔐 Writing private key to ~/.ssh/private_key..."
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/private_key
-          chmod 400 ~/.ssh/private_key
-          head -n 2 ~/.ssh/private_key
+          chmod 600 ~/.ssh/private_key
 
-          IMAGE_NAME=${{ inputs.image }}
-          APP_URL=https://proxydeema.fursa.click
+          cat > ~/.ssh/config <<EOF
+          Host ec2
+              HostName $EC2_HOST
+              User $EC2_USER
+              IdentityFile ~/.ssh/private_key
+              StrictHostKeyChecking no
+          EOF
 
-          echo "🔗 Attempting SSH connection..."
-          echo "👤 EC2_USER = [$EC2_USER]"
-          echo "🌐 EC2_HOST = [$EC2_HOST]"
+      - name: Clone or pull the repo on EC2
+        run: |
+          ssh -F ~/.ssh/config ec2 "if [ -d ~/polybot-dev ]; then cd ~/polybot-dev && git pull; else git clone $REPO_URL ~/polybot-dev; fi"
 
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/private_key $EC2_USER@$EC2_HOST << EOF
+      - name: Deploy Polybot with Docker Compose
+        run: |
+          ssh -F ~/.ssh/config ec2 <<'EOF'
             set -e
-
-            echo "✅ SSH successful. Cloning repo..."
-            cd /home/ubuntu/polybot-dev || git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev && cd polybot-dev
-            git checkout dev
-            git pull origin dev
+            cd ~/polybot-dev
 
             echo "💾 Writing .env.dev file..."
             cat <<EOT > .env.dev
-            IMG_NAME=$IMAGE_NAME
-            TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN
-            TELEGRAM_APP_URL=$APP_URL
+            IMG_NAME=${{ inputs.image }}
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            TELEGRAM_APP_URL=https://proxydeema.fursa.click
           EOT
 
-            echo "🐳 Deploying containers..."
+            echo "🐳 Running Docker Compose..."
             docker compose -f docker-compose.yaml pull
             docker compose -f docker-compose.yaml up -d --remove-orphans
           EOF
