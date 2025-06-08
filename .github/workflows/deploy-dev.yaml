@@ -40,14 +40,13 @@ jobs:
           echo "$PRIVATE_KEY" > key.pem
           chmod 400 key.pem
 
-          # ✅ Prepare .env file by substituting IMG_NAME into the template
-          export IMG_NAME=${{ inputs.image }}
-          envsubst < .env.template > .env
+          # ✅ Prepare .env file using substitution
+          sed "s|\${IMG_NAME}|${{ inputs.image }}|g" .env.template > .env
 
           echo "📦 Final local .env content:"
           cat .env
 
-          # ✅ Upload both config files to EC2
+          # ✅ Upload files to EC2
           scp -i key.pem -o StrictHostKeyChecking=no .env $EC2_USER@$EC2_HOST:/home/ubuntu/.env
           scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.yaml
 
