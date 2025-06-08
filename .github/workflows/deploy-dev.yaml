@@ -37,6 +37,6 @@ jobs:
             echo "TELEGRAM_APP_URL=proxydeema.fursa.click" >> .env
 
             echo "🔄 Running Docker Compose..."
-            docker compose -f docker-compose.dev.yaml pull
-            docker compose -f docker-compose.dev.yaml up -d --remove-orphans
+            docker compose -f docker-compose.yaml pull
+            docker compose -f docker-compose.yaml up -d --remove-orphans
           EOF
