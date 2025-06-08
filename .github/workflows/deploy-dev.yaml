@@ -26,17 +26,20 @@ jobs:
           chmod 400 key.pem
 
           ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
-            cd /home/ubuntu/polybot-dev || git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev && cd polybot-dev
+            set -e
 
+            cd /home/ubuntu/polybot-dev || git clone https://github.com/DeemaAbuHwaij/PolybotService.git polybot-dev && cd polybot-dev
             git checkout dev
             git pull origin dev
 
             echo "💾 Writing .env file..."
-            echo "IMG_NAME=${{ inputs.image }}" > .env
-            echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
-            echo "TELEGRAM_APP_URL=proxydeema.fursa.click" >> .env
+            cat <<EOT > .env.dev
+            IMG_NAME=${{ inputs.image }}
+            TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN
+            TELEGRAM_APP_URL=https://proxydeema.fursa.click
+          EOT
 
             echo "🔄 Running Docker Compose..."
-            docker compose -f docker-compose.dev.yaml pull
-            docker compose -f docker-compose.dev.yaml up -d --remove-orphans
+            docker compose -f docker-compose.yaml pull
+            docker compose -f docker-compose.yaml up -d --remove-orphans
           EOF
