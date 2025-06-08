@@ -1,3 +1,4 @@
+# .github/workflows/build-dev.yaml
 name: Polybot Build Dev
 
 on:
@@ -10,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.image }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -30,3 +32,8 @@ jobs:
     uses: ./.github/workflows/deploy-dev.yaml
     with:
       image: ${{ needs.build.outputs.image }}
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      EC2_HOST: ${{ secrets.DEV_EC2_HOST }}
+      EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
