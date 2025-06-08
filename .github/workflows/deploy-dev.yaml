@@ -1,52 +1,15 @@
-# .github/workflows/deploy-dev.yaml
-name: Polybot Deploy Dev
+name: Test SSH Secrets
 
-on:
-  workflow_call:
-    inputs:
-      image:
-        required: true
-        type: string
-
-  workflow_dispatch:
-    inputs:
-      image:
-        required: true
-        type: string
+on: [workflow_dispatch]
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+    env:
+      EC2_USER: ${{ secrets.EC2_USERNAME }}
+      EC2_HOST: ${{ secrets.EC2_HOST }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Debug Secrets
+      - name: Show secret values
         run: |
-          echo "✅ EC2_USERNAME=${{ secrets.EC2_USERNAME }}"
-          echo "✅ EC2_HOST=${{ secrets.EC2_HOST }}"
-
-      - name: SSH and Deploy
-        env:
-          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          EC2_USER: ${{ secrets.EC2_USERNAME }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          IMAGE: ${{ inputs.image }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: |
-          echo "$PRIVATE_KEY" > key.pem
-          chmod 400 key.pem
-
-          echo "🌐 SSH to $EC2_USER@$EC2_HOST"
-
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << EOF
-            cd PolybotService
-
-            echo "IMG_NAME=$IMAGE" > .env
-            echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env
-            echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
-
-            docker compose -f docker-compose.dev.yaml down || true
-            docker compose -f docker-compose.dev.yaml pull
-            docker compose -f docker-compose.dev.yaml up -d --build
-          EOF
+          echo "✅ EC2_USER = $EC2_USER"
+          echo "✅ EC2_HOST = $EC2_HOST"
