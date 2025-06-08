@@ -22,7 +22,11 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
-          echo "$SSH_PRIVATE_KEY" > key.pem
+          echo "🔍 First 2 lines of SSH_PRIVATE_KEY:"
+          echo "$SSH_PRIVATE_KEY" | head -n 2
+
+          echo "🔐 Writing key.pem safely..."
+          printf "%s" "$SSH_PRIVATE_KEY" > key.pem
           chmod 400 key.pem
 
           IMAGE_NAME=${{ inputs.image }}
