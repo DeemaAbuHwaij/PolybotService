@@ -80,9 +80,9 @@ jobs:
 
       - name: SSH and deploy to DEV
         run: |
-          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} "mkdir -p /home/ubuntu/PolybotServicePython"
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV}}:/home/ubuntu/PolybotServicePython/.env_
 
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
             echo "📁 Cloning or updating repo"
             if [ -d "PolybotServicePython" ]; then
               cd PolybotServicePython
