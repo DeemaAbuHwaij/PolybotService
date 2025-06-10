@@ -20,7 +20,7 @@ jobs:
         run: mv -f ImageProcessingChatBotProjectOriginal/polybot/test/* polybot/test/
       - name: Install dependencies
         run: |
-          pip install -r polybot/requirements.txt
+          pip install -r requirements.txt
       - name: Test filters
         run: |
           echo -e "\n\nTesting concat()\n"
