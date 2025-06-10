@@ -19,18 +19,17 @@ class Bot:
         expected_url = f'{telegram_chat_url}/{token}/'
         info = self.telegram_bot_client.get_webhook_info()
 
+        # Resolve the certificate path relative to this file
+        cert_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'certs', 'polybot.crt'))
+
         if info.url != expected_url:
-            logger.info(f"🔄 Setting webhook to: {expected_url}")
             self.telegram_bot_client.set_webhook(
                 url=expected_url,
-                certificate=open('/home/ubuntu/PolybotService/polybot.crt', 'r'),
+                certificate=open(cert_path, 'r'),
                 timeout=60
             )
-        else:
-            logger.info(f"✅ Webhook already set: {info.url}")
 
-        logger.info(f'Telegram Bot info:\n\n{self.telegram_bot_client.get_me()}')
-
+        self.telegram_bot_client.get_me()  # Force fetch bot info
     def send_text(self, chat_id, text):
         self.telegram_bot_client.send_message(chat_id, text)
 
