@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  polybot:
+    build: .
+    container_name: polybot-prod
+    ports:
+      - "8443:8443"
+    environment:
+      - ENV=prod
+      - AWS_REGION=us-west-1
+      - AWS_S3_BUCKET=deema-polybot-images
+      - TELEGRAM_BOT_TOKEN=7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0
+      - BOT_APP_URL=https://proxydeema.fursa.click:8443/7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0/
+    depends_on:
+      - otelcol
+    restart: unless-stopped
+
+
+  otelcol:
+    image: otel/opentelemetry-collector:latest
+    container_name: otelcol-prod
+    ports:
+      - "8889:8889"
+    volumes:
+      - ./otelcol-config.yaml:/etc/otelcol-config.yaml
+    command: ["--config=/etc/otelcol-config.yaml"]
