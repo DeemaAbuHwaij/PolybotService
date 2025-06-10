@@ -6,14 +6,19 @@ on:
       image:
         required: true
         type: string
+
     secrets:
-      SSH_PRIVATE_KEY:
+      EC2_SSH_KEY:
         required: true
-      EC2_HOST:
+      POLYBOT_EC2_IP_DEV:
         required: true
-      EC2_USERNAME:
+      TELEGRAM_BOT_TOKEN_DEV:
         required: true
-      TELEGRAM_BOT_TOKEN:
+      BOT_APP_URL_DEV:
+        required: true
+      YOLO_SERVER_URL_DEV:
+        required: true
+      S3_BUCKET_NAME_DEV:
         required: true
 
   workflow_dispatch:
@@ -21,47 +26,96 @@ on:
       image:
         required: true
         type: string
+        description: 'Docker image name to deploy'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      EC2_HOST: ${{ secrets.EC2_HOST }}
-      EC2_USER: ${{ secrets.EC2_USERNAME }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      IMAGE: ${{ inputs.image }}   # ✅ Move IMAGE here, not inside step!
-
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: SSH and Deploy
+      - name: Download image name artifact (fallback)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-name
+          path: ./
+        continue-on-error: true
+
+      - name: Setup SSH key
         run: |
-          echo "$PRIVATE_KEY" > key.pem
-          chmod 400 key.pem
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
 
-          # ✅ Write .env file locally on the runner
-          echo "IMG_NAME=${{ inputs.image }}" > .env
-          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
-          echo "TELEGRAM_APP_URL=https://proxydeema.fursa.click" >> .env
+      - name: Determine image name
+        id: get-image
+        run: |
+          if [ -n "${{ inputs.image }}" ]; then
+            IMAGE_NAME="${{ inputs.image }}"
+            echo "✅ Using input image: $IMAGE_NAME"
+          elif [ -f "image_name.txt" ]; then
+            IMAGE_NAME=$(cat image_name.txt)
+            echo "✅ Using artifact image: $IMAGE_NAME"
+          else
+            echo "❌ No image name found!"
+            exit 1
+          fi
 
-          echo "📦 .env content:"
+          echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "🚀 Final image name: $IMAGE_NAME"
+
+      - name: Create .env file
+        run: |
+          IMAGE_NAME="${{ steps.get-image.outputs.image }}"
+
+          echo "IMG_NAME=$IMAGE_NAME" > .env
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
+          echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
+          echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
+          echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env
+
+          echo "📝 Contents of .env file:"
           cat .env
 
-          # ✅ Upload BOTH files to EC2
-          scp -i key.pem -o StrictHostKeyChecking=no .env $EC2_USER@$EC2_HOST:/home/ubuntu/.env
-          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:/home/ubuntu/docker-compose.yaml
+      - name: SSH and deploy to DEV
+        run: |
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
 
-          # ✅ Now run Docker Compose remotely
-          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << 'EOF'
-            cd /home/ubuntu
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
+            echo "📁 Cloning or updating repo"
+            if [ -d "PolybotServicePython" ]; then
+              cd PolybotServicePython
+              git checkout dev
+              git pull origin dev
+            else
+              git clone --branch dev https://github.com/${{ github.repository }} PolybotServicePython
+              cd PolybotServicePython
+            fi
 
-            echo "🛠 Docker Compose config:"
-            docker compose --env-file .env -f docker-compose.yaml config
+            echo "📝 Checking .env file contents on server:"
+            cat .env
 
-            docker compose --env-file .env -f docker-compose.yaml pull
-            docker compose --env-file .env -f docker-compose.yaml down
-            docker compose --env-file .env -f docker-compose.yaml up -d
+            echo "[+] Checking for Docker"
+            if ! command -v docker &> /dev/null; then
+              echo "📦 Installing Docker..."
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sh get-docker.sh
+              sudo usermod -aG docker $USER
+              newgrp docker
+            else
+              echo "✅ Docker already installed"
+            fi
+
+            echo "🐳 Starting Docker Compose"
+            docker compose -f docker-compose.dev.yaml pull
+            docker compose -f docker-compose.dev.yaml up -d --remove-orphans
+
+            echo "🔍 Verifying OpenTelemetry metrics endpoint"
+            if curl -s http://localhost:8889/metrics | grep -q 'system_cpu_time'; then
+              echo "✅ OpenTelemetry metrics are exposed"
+            else
+              echo "⚠️ Metrics not available"
+              docker logs $(docker ps -qf "name=otelcol") 2>/dev/null || echo "No otelcol container found"
+            fi
           EOF
