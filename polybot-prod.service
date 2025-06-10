@@ -10,7 +10,7 @@ Restart=always
 Environment="ENV=development"
 Environment=BOT_APP_URL=https://proxydeema.fursa.click:8443/7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0/
 Environment=TELEGRAM_BOT_TOKEN=7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0
-Environment=YOLO_URL=http://10.0.1.66:8080/predict
+Environment=YOLO_URL=http://10.0.0.5:8080/predict
 
 
 [Install]
