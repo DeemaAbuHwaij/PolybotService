@@ -80,17 +80,22 @@ jobs:
 
       - name: SSH and deploy to DEV
         run: |
+          echo "📁 Ensure remote directory exists"
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} "mkdir -p /home/ubuntu/PolybotServicePython"
-          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV}}:/home/ubuntu/PolybotServicePython/.env_
+
+          echo "📤 Copying .env to EC2"
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
+
+          echo "🚀 Deploying on EC2"
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
+            cd /home/ubuntu/PolybotServicePython
 
             echo "📁 Cloning or updating repo"
-            if [ -d "PolybotServicePython" ]; then
-              cd PolybotServicePython
+            if [ -d ".git" ]; then
               git checkout dev
               git pull origin dev
             else
-              git clone --branch dev https://github.com/${{ github.repository }} PolybotServicePython
-              cd PolybotServicePython
+              git clone --branch dev https://github.com/${{ github.repository }} .
             fi
 
             echo "📝 Checking .env file contents on server:"
