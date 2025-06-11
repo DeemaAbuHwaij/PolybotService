@@ -12,6 +12,8 @@ services:
       - AWS_S3_BUCKET=deema-polybot-images
       - TELEGRAM_BOT_TOKEN=7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0
       - BOT_APP_URL=https://proxydeema.fursa.click:8443/7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0/
+      - YOLO_URL=http://10.0.1.66:8080/predict
+
     depends_on:
       - otelcol
     restart: unless-stopped
