@@ -61,20 +61,24 @@ jobs:
             echo "❌ No image name found!"
             exit 1
           fi
+
           echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
           echo "🚀 Final image name: $IMAGE_NAME"
 
       - name: Create .env file
         run: |
           IMAGE_NAME="${{ steps.get-image.outputs.image }}"
+
           echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
-          echo "YOLO_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
-          echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env
+          echo "YOLO_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env    # FIXED
+          echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env  # FIXED
 
           echo "📝 Contents of .env file:"
           cat .env
+          
+        
 
       - name: SSH and deploy to DEV
         run: |
@@ -119,6 +123,6 @@ jobs:
               echo "✅ OpenTelemetry metrics are exposed"
             else
               echo "⚠️ Metrics not available"
-              docker logs \$(docker ps -qf "name=otelcol") 2>/dev/null || echo "No otelcol container found"
+              docker logs $(docker ps -qf "name=otelcol") 2>/dev/null || echo "No otelcol container found"
             fi
           EOF
