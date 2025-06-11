@@ -82,10 +82,10 @@ jobs:
       - name: SSH and deploy to PROD
         run: |
           echo "📁 Ensure remote directory exists"
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP }} "mkdir -p /home/ubuntu/PolybotServicePython"
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP }} "mkdir -p /home/ubuntu/PolybotService"
 
           echo "📤 Copying .env to EC2"
-          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP }}:/home/ubuntu/PolybotServicePython/.env
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP }}:/home/ubuntu/PolybotService/.env
 
           echo "🚀 Deploying on EC2"
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP }} << 'EOF'
@@ -115,8 +115,9 @@ jobs:
 
             echo "🐳 Starting Docker Compose"
 
-            docker-compose -f docker-compose.yaml pull
-            docker-compose -f docker-compose.yaml up -d --build --remove-orphans
+            docker-compose -f docker-compose-prod.yaml pull
+            docker-compose -f docker-compose-prod.yaml up -d --build --remove-orphans
+
 
             echo "🔍 Verifying OpenTelemetry metrics endpoint"
             if curl -s http://localhost:8889/metrics | grep -q 'system_cpu_time'; then
