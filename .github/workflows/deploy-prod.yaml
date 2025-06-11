@@ -79,46 +79,35 @@ jobs:
           cat .env
     
 
-      - name: SSH and deploy to PROD
+      - name: SSH and deploy to YOLO Dev
         run: |
-          echo "📁 Ensure remote directory exists"
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP }} "mkdir -p /home/ubuntu/PolybotService"
+          echo "📁 Ensure remote dir exists"
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.YOLO_EC2_IP_DEV }} "mkdir -p /home/ubuntu/YoloService"
 
-          echo "📤 Copying .env to EC2"
-          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP }}:/home/ubuntu/PolybotService/.env
+          echo "📤 Copying .env"
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.YOLO_EC2_IP_DEV }}:/home/ubuntu/YoloService/.env
 
-          echo "🚀 Deploying on EC2"
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP }} << 'EOF'
-            cd /home/ubuntu/PolybotService
+          echo "🚀 SSH into EC2 and deploy"
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.YOLO_EC2_IP_DEV }} << 'EOF'
+            cd /home/ubuntu/YoloService
 
             echo "📁 Cloning or updating repo"
             if [ -d ".git" ]; then
-              git checkout main
+              echo "💾 Stashing local changes"
+              git stash save "Pre-deploy stash"
+
+              echo "⬇️ Pulling latest code"
               git pull origin main
+
+              echo "🔁 Re-applying stashed changes"
+              git stash pop || echo "⚠️ Nothing to re-apply"
             else
               git clone --branch main https://github.com/${{ github.repository }} .
             fi
 
-            echo "📝 Checking .env file contents on server:"
-            cat .env
-
-            echo "[+] Checking for Docker"
-            if ! command -v docker &> /dev/null; then
-              echo "📦 Installing Docker..."
-              curl -fsSL https://get.docker.com -o get-docker.sh
-              sh get-docker.sh
-              sudo usermod -aG docker $USER
-              newgrp docker
-            else
-              echo "✅ Docker already installed"
-            fi
-
-            echo "🐳 Starting Docker Compose"
-
-            docker compose -f docker-compose-prod.yaml pull
-            docker compose -f docker-compose-prod.yaml up -d --build --remove-orphans
-
-
+            docker compose -f docker-compose.dev.yaml pull
+            docker compose -f docker-compose.dev.yaml down -v || true
+            docker compose -f docker-compose.dev.yaml up -d --build --remove-orphans
 
             echo "🔍 Verifying OpenTelemetry metrics endpoint"
             if curl -s http://localhost:8889/metrics | grep -q 'system_cpu_time'; then
@@ -127,4 +116,6 @@ jobs:
               echo "⚠️ Metrics not available"
               docker logs $(docker ps -qf "name=otelcol") 2>/dev/null || echo "No otelcol container found"
             fi
+
+            curl -s http://localhost:8080/health || echo "⚠️ YOLO health check failed"
           EOF
