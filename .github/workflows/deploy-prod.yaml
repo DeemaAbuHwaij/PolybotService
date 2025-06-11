@@ -113,8 +113,8 @@ jobs:
             fi
 
             echo "🐳 Starting Docker Compose"
-            docker-compose -f docker-compose.prod.yaml pull
-            docker-compose -f docker-compose.prod.yaml up -d --remove-orphans
+            docker-compose -f docker-compose-prod.yaml pull
+            docker-compose -f docker-compose-prod.yaml up -d --remove-orphans
 
 
             echo "🔍 Verifying OpenTelemetry metrics endpoint"
