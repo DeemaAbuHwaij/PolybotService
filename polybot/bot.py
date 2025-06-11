@@ -229,7 +229,7 @@ class ImageProcessingBot(Bot):
                             raise RuntimeError("❌ Upload to S3 failed")
 
                         # Send only image_name and chat_id to YOLO
-                        yolo_url = "http://127.0.0.1:8081/predict"
+                        yolo_url = "http://127.0.0.1:8080/predict"
                         response = requests.post(yolo_url, json={
                             "image_name": image_name,
                             "chat_id": chat_id
