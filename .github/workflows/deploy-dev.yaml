@@ -72,11 +72,13 @@ jobs:
           echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
-          echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
-          echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env
+          echo "YOLO_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env    # FIXED
+          echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env  # FIXED
 
           echo "📝 Contents of .env file:"
           cat .env
+          
+        
 
       - name: SSH and deploy to DEV
         run: |
@@ -113,8 +115,8 @@ jobs:
             fi
 
             echo "🐳 Starting Docker Compose"
-            docker compose -f docker-compose.dev.yaml pull
-            docker compose -f docker-compose.dev.yaml up -d --remove-orphans
+            docker compose -f docker-compose-dev.yaml pull
+            docker compose -f docker-compose-dev.yaml up -d --remove-orphans
 
             echo "🔍 Verifying OpenTelemetry metrics endpoint"
             if curl -s http://localhost:8889/metrics | grep -q 'system_cpu_time'; then
