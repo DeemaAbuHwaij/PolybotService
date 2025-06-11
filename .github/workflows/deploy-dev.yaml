@@ -83,14 +83,14 @@ jobs:
       - name: SSH and deploy to DEV
         run: |
           echo "📁 Ensure remote directory exists"
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} "mkdir -p /home/ubuntu/PolybotServicePython"
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} "mkdir -p /home/ubuntu/PolybotService"
 
           echo "📤 Copying .env to EC2"
-          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotService/.env
 
           echo "🚀 Deploying on EC2"
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
-            cd /home/ubuntu/PolybotServicePython
+            cd /home/ubuntu/PolybotService
 
             echo "📁 Cloning or updating repo"
             if [ -d ".git" ]; then
