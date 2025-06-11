@@ -26,3 +26,12 @@ services:
     volumes:
       - ./otelcol-config.yaml:/etc/otelcol-config.yaml
     command: ["--config=/etc/otelcol-config.yaml"]
+
+
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
