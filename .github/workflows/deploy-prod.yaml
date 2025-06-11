@@ -88,7 +88,7 @@ jobs:
 
           echo "🚀 Deploying on EC2"
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP }} << 'EOF'
-            cd /home/ubuntu/PolybotServicePython
+            cd /home/ubuntu/PolybotService
 
             echo "📁 Cloning or updating repo"
             if [ -d ".git" ]; then
