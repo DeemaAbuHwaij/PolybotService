@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   polybot:
-    build: .
+    image: ${IMG_NAME}   # Use the image from .env file
     container_name: polybot-dev
     ports:
       - "8443:8443"
@@ -12,6 +12,8 @@ services:
       - AWS_S3_BUCKET=deema-polybot-dev-images
       - TELEGRAM_BOT_TOKEN=8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc
       - BOT_APP_URL=https://proxydeema.fursa.click/8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc/
+      - BOT_APP_URL=${BOT_APP_URL}
+      - YOLO_URL=${YOLO_URL}
     depends_on:
       - otelcol
     restart: unless-stopped

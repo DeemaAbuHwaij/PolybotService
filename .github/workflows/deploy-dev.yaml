@@ -72,23 +72,25 @@ jobs:
           echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_DEV }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
-          echo "YOLO_SERVER_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env
-          echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env
+          echo "YOLO_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env    # FIXED
+          echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env  # FIXED
 
           echo "📝 Contents of .env file:"
           cat .env
+          
+        
 
       - name: SSH and deploy to DEV
         run: |
           echo "📁 Ensure remote directory exists"
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} "mkdir -p /home/ubuntu/PolybotServicePython"
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} "mkdir -p /home/ubuntu/PolybotService"
 
           echo "📤 Copying .env to EC2"
-          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotServicePython/.env
+          scp -i key.pem -o StrictHostKeyChecking=no .env ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }}:/home/ubuntu/PolybotService/.env
 
           echo "🚀 Deploying on EC2"
           ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.POLYBOT_EC2_IP_DEV }} << 'EOF'
-            cd /home/ubuntu/PolybotServicePython
+            cd /home/ubuntu/PolybotService
 
             echo "📁 Cloning or updating repo"
             if [ -d ".git" ]; then
