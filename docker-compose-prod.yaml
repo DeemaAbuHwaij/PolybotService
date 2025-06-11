@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   polybot:
-    build: .
+    image: ${IMG_NAME}   # Use the image from .env file
     container_name: polybot-prod
     ports:
       - "8443:8443"
@@ -10,14 +10,13 @@ services:
       - ENV=prod
       - AWS_REGION=us-west-1
       - AWS_S3_BUCKET=deema-polybot-images
-      - TELEGRAM_BOT_TOKEN=7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0
-      - BOT_APP_URL=https://proxydeema.fursa.click:8443/7646100933:AAF2IatgO44CwiCiOnZnP28uIejRLGwifT0/
-      - YOLO_URL=http://10.0.1.66:8080/predict
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}   # Use env var from .env
+      - BOT_APP_URL=${BOT_APP_URL}
+      - YOLO_URL=${YOLO_URL}
 
     depends_on:
       - otelcol
     restart: unless-stopped
-
 
   otelcol:
     image: otel/opentelemetry-collector:latest
