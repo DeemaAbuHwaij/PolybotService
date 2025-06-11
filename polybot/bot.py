@@ -213,27 +213,30 @@ class ImageProcessingBot(Bot):
                     self.send_text(chat_id, f"💥 Your photo has been *{caption}ed* successfully!")
                     print(f"Processed and sent photo with filter '{caption}'")
                     return
-
                 elif caption == 'detect':
                     try:
                         output_path = img.save_img()
                         image_name = os.path.basename(output_path)
 
-                        # Upload image to S3 using the fixed upload_file() function
                         s3_key = f"{chat_id}/original/{image_name}"
                         bucket = os.getenv("AWS_S3_BUCKET")
                         if not bucket:
                             raise ValueError("❌ AWS_S3_BUCKET environment variable is not set.")
-                        success = upload_file(output_path, "deema-polybot-images", s3_key)
+
+                        success = upload_file(output_path, bucket, s3_key)
                         if not success:
                             raise RuntimeError("❌ Upload to S3 failed")
 
-                        # Send only image_name and chat_id to YOLO
-                        yolo_url = "http://127.0.0.1:8080/predict"
+                        yolo_url = os.getenv("YOLO_URL")
+                        if not yolo_url:
+                            raise ValueError("❌ YOLO_URL environment variable is not set.")
+
+                        logger.info(f"📡 Sending detection request to YOLO: {yolo_url}")
                         response = requests.post(yolo_url, json={
                             "image_name": image_name,
                             "chat_id": chat_id
                         })
+                        logger.info(f"✅ YOLO responded with: {response.status_code}, {response.text}")
                         response.raise_for_status()
 
                         data = response.json()
@@ -245,13 +248,16 @@ class ImageProcessingBot(Bot):
 
                         self.send_text(chat_id, reply_message)
                         self.send_text(chat_id, "💥 Your photo has been *detected* successfully!")
-                        print("Processed and sent photo with filter 'detect'")
                         return
 
                     except Exception as e:
-                        logger.error(f"❌ Detection failed: {e}")
+                        logger.error("❌ Detection failed:")
+                        logger.error(traceback.format_exc())
                         self.send_text(chat_id, "❗ Error occurred while contacting YOLO service.")
                         return
+
+
+
                 else:
                     self.send_text(chat_id,
                                    "Unsupported filter! Try: Blur, Contour, Rotate, Segment, Salt and pepper, Detect, Concat.")
