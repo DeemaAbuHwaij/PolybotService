@@ -122,7 +122,6 @@ jobs:
             if curl -s http://localhost:8889/metrics | grep -q 'system_cpu_time'; then
               echo "✅ OpenTelemetry metrics are exposed"
             else
-              echo "⚠️ Metrics not available"
               docker logs $(docker ps -qf "name=otelcol") 2>/dev/null || echo "No otelcol container found"
             fi
           EOF
