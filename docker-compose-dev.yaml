@@ -32,5 +32,7 @@ services:
       - HOST_SYS=/hostfs/sys
     command: [ "--config=/etc/otelcol/config.yaml" ]
     network_mode: host
+    restart: always
+
 
 
