@@ -35,22 +35,27 @@ mock_msg = {
             'width': 320,
             'height': 320
         },
-        {'file_id': 'AgACAgQAAxkDAAIBXWS89nwr4unzj72WKH0XpwLdcrzqAAIBvzEbx73gUbDHoYwLMSkCAQADAgADeAADLwQ',
-         'file_unique_id': 'AQADAb8xG8e94FF9',
-         'file_size': 99929,
-         'width': 660,
-         'height': 660
-         }
+        {
+            'file_id': 'AgACAgQAAxkDAAIBXWS89nwr4unzj72WKH0XpwLdcrzqAAIBvzEbx73gUbDHoYwLMSkCAQADAgADeAADLwQ',
+            'file_unique_id': 'AQADAb8xG8e94FF9',
+            'file_size': 99929,
+            'width': 660,
+            'height': 660
+        }
     ],
     'caption': 'Rotate'
 }
-
 
 class TestBot(unittest.TestCase):
 
     @patch('telebot.TeleBot')
     def setUp(self, mock_telebot):
-        bot = ImageProcessingBot(token='bot_token', telegram_chat_url='webhook_url')
+        mock_storage = MagicMock()  # ✅ Add mocked storage
+        bot = ImageProcessingBot(
+            token='bot_token',
+            telegram_chat_url='webhook_url',
+            storage=mock_storage  # ✅ Inject storage
+        )
         bot.telegram_bot_client = mock_telebot.return_value
 
         mock_file = Mock()
@@ -97,8 +102,10 @@ class TestBot(unittest.TestCase):
         self.assertEqual(chat_id, mock_msg['chat']['id'])
 
         contains_retry = any(keyword in text.lower() for keyword in retry_keywords)
-        self.assertTrue(contains_retry, f"Error message was not sent to the user. Make sure your message contains one of {retry_keywords}")
-
+        self.assertTrue(
+            contains_retry,
+            f"Error message was not sent to the user. Make sure your message contains one of {retry_keywords}"
+        )
 
 if __name__ == '__main__':
     unittest.main()
