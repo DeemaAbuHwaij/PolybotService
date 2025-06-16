@@ -13,6 +13,8 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}   # Use env var from .env
       - BOT_APP_URL=${BOT_APP_URL}
       - YOLO_URL=${YOLO_URL}
+      - STORAGE_TYPE=${STORAGE_TYPE}
+      - AWS_REGION=${AWS_REGION}
 
     depends_on:
       - otelcol
