@@ -1,4 +1,5 @@
 import sqlite3
+import json
 from .base import StorageInterface
 
 class SQLiteStorage(StorageInterface):
@@ -36,9 +37,10 @@ class SQLiteStorage(StorageInterface):
 
     def save_detection(self, request_id, label, confidence, bbox):
         cursor = self.conn.cursor()
+        bbox_str = json.dumps(bbox) if isinstance(bbox, (list, dict)) else str(bbox)
         cursor.execute(
             "INSERT INTO detections (request_id, label, confidence, bbox) VALUES (?, ?, ?, ?)",
-            (request_id, label, confidence, bbox)
+            (request_id, label, float(confidence), bbox_str)
         )
         self.conn.commit()
 
