@@ -34,5 +34,3 @@ services:
     network_mode: host
     restart: always
 
-
-
