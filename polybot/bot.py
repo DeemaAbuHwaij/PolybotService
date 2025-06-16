@@ -12,7 +12,9 @@ from botocore.exceptions import ClientError
 
 class Bot:
 
-    def __init__(self, token, telegram_chat_url):
+
+    def __init__(self, token, telegram_chat_url, storage):
+        self.storage = storage  # <- Store the injected storage backend
         self.telegram_bot_client = telebot.TeleBot(token)
         self.telegram_bot_client.remove_webhook()
         time.sleep(0.5)
@@ -114,7 +116,23 @@ class ImageProcessingBot(Bot):
                                    "• Blur\n• Contour\n• Rotate\n• Segment\n• Salt and pepper\n• Detect\n\n"
                                    "🌗 To concatenate images, send two photos together with one of these captions:\n"
                                    "• concat horizontal\n• concat vertical\n\n"
-                                   "Just type the filter name as the photo's caption.")
+                                   "Just type the filter name as the photo's caption.\n\n"
+                                   "📥 To retrieve a saved prediction: `/get <message_id>`")
+                elif text.startswith('/get'):
+                    parts = text.split()
+                    if len(parts) != 2:
+                        self.send_text(chat_id, "Usage: /get <message_id>")
+                        return
+
+                    request_id = parts[1]
+                    prediction = self.storage.get_prediction(request_id)
+
+                    if prediction:
+                        self.send_text(chat_id, "🎯 Found your saved prediction:")
+                        self.send_text(chat_id, f"🖼️ Original path: {prediction['original_path']}")
+                        self.send_text(chat_id, f"📸 Processed path: {prediction['predicted_path']}")
+                    else:
+                        self.send_text(chat_id, "❌ No prediction found for this ID.")
                 else:
                     self.send_text(chat_id,
                                    "🖼️ Please send a photo with one of the following filter captions:\n"
@@ -218,6 +236,13 @@ class ImageProcessingBot(Bot):
                         output_path = img.save_img()
                         image_name = os.path.basename(output_path)
 
+                        # Save prediction info
+                        self.storage.save_prediction(
+                            request_id=str(message["message_id"]),
+                            original_path=local_photo_path,
+                            predicted_path=str(output_path)
+                        )
+
                         s3_key = f"{chat_id}/original/{image_name}"
                         bucket = os.getenv("AWS_S3_BUCKET")
                         if not bucket:
@@ -241,6 +266,16 @@ class ImageProcessingBot(Bot):
 
                         data = response.json()
                         labels = data.get("labels", [])
+
+                        # Save detections
+                        for label in labels:
+                            self.storage.save_detection(
+                                request_id=str(message["message_id"]),
+                                label=label,
+                                confidence=1.0,  # placeholder
+                                bbox="[]"  # placeholder
+                            )
+
                         if labels:
                             reply_message = "🧠 Detected objects: " + ", ".join(labels)
                         else:

@@ -4,6 +4,8 @@ import os
 import json
 from loguru import logger
 from polybot.bot import Bot, QuoteBot, ImageProcessingBot
+from polybot.storage.factory import get_storage
+
 
 app = flask.Flask(__name__)
 
@@ -11,7 +13,9 @@ TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 BOT_APP_URL = os.environ['BOT_APP_URL']
 
 # Initialize bot once globally
-bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL)
+storage = get_storage()
+bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL, storage)
+
 
 @app.route('/', methods=['GET'])
 def index():
