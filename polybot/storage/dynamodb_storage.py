@@ -2,7 +2,7 @@ import boto3
 from .base import StorageInterface
 
 class DynamoDBStorage(StorageInterface):
-    def __init__(self, table_name="PolybotPredictions", region_name="us-west-1"):
+    def __init__(self, table_name="deema-PolybotPredictions", region_name="us-west-1"):
         self.dynamodb = boto3.resource("dynamodb", region_name=region_name)
         self.table = self.dynamodb.Table(table_name)
 
