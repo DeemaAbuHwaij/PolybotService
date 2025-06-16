@@ -1,4 +1,5 @@
 import boto3
+from decimal import Decimal
 from .base import StorageInterface
 
 class DynamoDBStorage(StorageInterface):
@@ -24,7 +25,7 @@ class DynamoDBStorage(StorageInterface):
                 "request_id": f"{request_id}#{label}",
                 "type": "detection",
                 "label": label,
-                "confidence": confidence,
+                "confidence": Decimal(str(confidence)),  # ✅ Convert float to Decimal
                 "bbox": bbox,
                 "parent_id": request_id
             }
