@@ -7,6 +7,7 @@ class DynamoDBStorage(StorageInterface):
         self.table = self.dynamodb.Table(table_name)
 
     def save_prediction(self, request_id, original_path, predicted_path):
+        print(f"📝 Saving prediction to DynamoDB: {request_id}")
         self.table.put_item(
             Item={
                 "request_id": request_id,
@@ -17,6 +18,7 @@ class DynamoDBStorage(StorageInterface):
         )
 
     def save_detection(self, request_id, label, confidence, bbox):
+        print(f"📝 Saving detection to DynamoDB: {request_id}")
         self.table.put_item(
             Item={
                 "request_id": f"{request_id}#{label}",
