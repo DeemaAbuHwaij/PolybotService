@@ -21,7 +21,6 @@ class DynamoDBStorage(StorageInterface):
 
     def save_detection(self, request_id, label, confidence, bbox):
         print(f"📝 Saving detection to DynamoDB: {request_id}")
-        print(f"📦 Raw bbox input: {bbox}")  # 👈 Add here
 
         def safe_decimal_list(values):
             result = []
