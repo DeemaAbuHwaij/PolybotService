@@ -14,6 +14,8 @@ services:
       - BOT_APP_URL=https://proxydeema.fursa.click/8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc/
       - BOT_APP_URL=${BOT_APP_URL}
       - YOLO_URL=${YOLO_URL}
+      - STORAGE_TYPE=${STORAGE_TYPE}
+      - AWS_REGION=${AWS_REGION}
     depends_on:
       - otelcol
     restart: unless-stopped
