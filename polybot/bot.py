@@ -173,7 +173,8 @@ class ImageProcessingBot(Bot):
                             img1.concat(img2, direction=direction)
                             output_path = img1.save_img()
                             self.send_photo(chat_id, output_path)
-                            self.send_text(chat_id, f"💥 Concatenation complete!")
+                            self.send_text(chat_id,
+                                           f"💥 Your photos have been concatenated *{direction}ly* successfully!")
                         del self.media_group_photos[media_group_id]
                     return
 
@@ -188,7 +189,8 @@ class ImageProcessingBot(Bot):
                 img = Img(local_photo_path)
 
                 if caption in emoji_map:
-                    self.send_text(chat_id, f"{emoji_map[caption]} Applying *{caption}*...")
+                    self.send_text(chat_id,
+                                   f"{emoji_map[caption]} I am doing a {caption} for your photo. Just a few moments...")
 
                 if caption == 'blur':
                     img.blur()
@@ -204,7 +206,7 @@ class ImageProcessingBot(Bot):
                 if caption in ['blur', 'contour', 'rotate', 'segment', 'salt and pepper']:
                     output_path = img.save_img()
                     self.send_photo(chat_id, output_path)
-                    self.send_text(chat_id, f"💥 Filter '{caption}' applied successfully!")
+                    self.send_text(chat_id, f"💥 Your photo has been *{caption}ed* successfully!")
                     return
 
                 elif caption == 'detect':
@@ -255,7 +257,7 @@ class ImageProcessingBot(Bot):
                             reply = "🔍 No objects detected."
 
                         self.send_text(chat_id, reply)
-                        self.send_text(chat_id, "💥 Detection completed successfully!")
+                        self.send_text(chat_id, "💥 Your photo has been *detected* successfully!")
                         return
 
                     except Exception:
