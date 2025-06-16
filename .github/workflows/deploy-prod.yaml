@@ -72,8 +72,10 @@ jobs:
           echo "IMG_NAME=$IMAGE_NAME" > .env
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN_PROD }}" >> .env
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_PROD }}" >> .env
-          echo "YOLO_URL=${{ secrets.YOLO_SERVER_URL_PROD }}" >> .env    # FIXED
-          echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_PROD }}" >> .env  # FIXED
+          echo "YOLO_URL=${{ secrets.YOLO_SERVER_URL_PROD }}" >> .env    
+          echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_PROD }}" >> .env  
+          echo "STORAGE_TYPE=dynamodb" >> .env
+          echo "AWS_REGION=us-west-1" >> .env
 
           echo "📝 Contents of .env file:"
           cat .env
