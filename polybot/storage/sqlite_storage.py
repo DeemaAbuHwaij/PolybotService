@@ -1,8 +1,5 @@
 import sqlite3
-import json
 from .base import StorageInterface
-from decimal import Decimal
-
 
 class SQLiteStorage(StorageInterface):
     def __init__(self, db_path="predictions.db"):
@@ -38,17 +35,12 @@ class SQLiteStorage(StorageInterface):
         self.conn.commit()
 
     def save_detection(self, request_id, label, confidence, bbox):
-        print(f"📝 Saving detection to DynamoDB: {request_id}")
-        self.table.put_item(
-            Item={
-                "request_id": f"{request_id}#{label}",
-                "type": "detection",
-                "label": label,
-                "confidence": Decimal(str(confidence)),  # ✅ Convert to Decimal
-                "bbox": bbox,
-                "parent_id": request_id
-            }
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT INTO detections (request_id, label, confidence, bbox) VALUES (?, ?, ?, ?)",
+            (request_id, label, confidence, bbox)
         )
+        self.conn.commit()
 
     def get_prediction(self, request_id):
         cursor = self.conn.cursor()
