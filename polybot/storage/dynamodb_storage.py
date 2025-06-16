@@ -1,6 +1,7 @@
 import boto3
-from decimal import Decimal
 from .base import StorageInterface
+from decimal import Decimal, InvalidOperation
+
 
 class DynamoDBStorage(StorageInterface):
     def __init__(self, table_name="deema-PolybotPredictions", region_name="us-west-1"):
@@ -20,9 +21,20 @@ class DynamoDBStorage(StorageInterface):
 
     def save_detection(self, request_id, label, confidence, bbox):
         print(f"📝 Saving detection to DynamoDB: {request_id}")
+        print(f"📦 Raw bbox input: {bbox}")  # 👈 Add here
 
-        # Convert bbox floats to Decimals
-        bbox_decimal = [Decimal(str(coord)) for coord in bbox]
+        def safe_decimal_list(values):
+            result = []
+            for v in values:
+                try:
+                    result.append(Decimal(str(v)))
+                except (InvalidOperation, ValueError, TypeError) as e:
+                    print(f"❌ Invalid bbox value: {v} — defaulting to 0. Error: {e}")
+                    result.append(Decimal("0"))  # Replace with appropriate fallback
+            return result
+
+
+        bbox_decimal = safe_decimal_list(bbox)
 
         self.table.put_item(
             Item={
@@ -34,6 +46,7 @@ class DynamoDBStorage(StorageInterface):
                 "parent_id": request_id
             }
         )
+
     def get_prediction(self, request_id):
         response = self.table.get_item(
             Key={"request_id": request_id}
