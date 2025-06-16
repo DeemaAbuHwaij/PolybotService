@@ -20,17 +20,20 @@ class DynamoDBStorage(StorageInterface):
 
     def save_detection(self, request_id, label, confidence, bbox):
         print(f"📝 Saving detection to DynamoDB: {request_id}")
+
+        # Convert bbox floats to Decimals
+        bbox_decimal = [Decimal(str(coord)) for coord in bbox]
+
         self.table.put_item(
             Item={
                 "request_id": f"{request_id}#{label}",
                 "type": "detection",
                 "label": label,
-                "confidence": Decimal(str(confidence)),  # ✅ Convert float to Decimal
-                "bbox": bbox,
+                "confidence": Decimal(str(confidence)),
+                "bbox": bbox_decimal,
                 "parent_id": request_id
             }
         )
-
     def get_prediction(self, request_id):
         response = self.table.get_item(
             Key={"request_id": request_id}
