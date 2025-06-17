@@ -9,6 +9,13 @@ import requests
 import logging
 import boto3
 from botocore.exceptions import ClientError
+import uuid
+import json
+
+
+# SQS client (global)
+sqs = boto3.client("sqs", region_name=os.getenv("AWS_REGION"))
+SQS_QUEUE_URL = os.getenv("YOLO_SQS_QUEUE_URL")
 
 
 class Bot:
@@ -83,7 +90,7 @@ def upload_file(file_name, bucket, object_name=None):
     if object_name is None:
         object_name = os.path.basename(file_name)
 
-    s3_client = boto3.client('s3')
+    s3_client = boto3.client('s3', region_name=os.getenv("AWS_REGION"))
     try:
         s3_client.upload_file(file_name, bucket, object_name)
     except ClientError as e:
@@ -152,7 +159,6 @@ class ImageProcessingBot(Bot):
                     'detect': '🧠'
                 }
 
-                # Handle concat
                 if media_group_id:
                     if media_group_id not in self.media_group_photos:
                         self.media_group_photos[media_group_id] = {
@@ -226,51 +232,35 @@ class ImageProcessingBot(Bot):
                     try:
                         output_path = img.save_img()
                         image_name = os.path.basename(output_path)
+                        prediction_id = str(uuid.uuid4())
 
+                        # Save locally
                         self.storage.save_prediction(
-                            request_id=str(message["message_id"]),
+                            request_id=prediction_id,
                             original_path=local_photo_path,
                             predicted_path=str(output_path)
                         )
 
-                        s3_key = f"{chat_id}/original/{image_name}"
                         bucket = os.getenv("AWS_S3_BUCKET")
                         if not bucket:
                             raise ValueError("❌ AWS_S3_BUCKET not set")
 
+                        s3_key = f"{chat_id}/original/{image_name}"
                         if not upload_file(output_path, bucket, s3_key):
                             raise RuntimeError("❌ Upload to S3 failed")
 
-                        yolo_url = os.getenv("YOLO_URL")
-                        if not yolo_url:
-                            raise ValueError("❌ YOLO_URL not set")
+                        # Send to SQS
+                        sqs.send_message(
+                            QueueUrl=SQS_QUEUE_URL,
+                            MessageBody=json.dumps({
+                                "request_id": prediction_id,
+                                "chat_id": chat_id,
+                                "image_s3_key": s3_key,
+                                "bucket": bucket
+                            })
+                        )
 
-                        logger.info(f"📡 Sending to YOLO: {yolo_url}")
-                        response = requests.post(yolo_url, json={
-                            "image_name": image_name,
-                            "chat_id": chat_id
-                        })
-                        logger.info(f"✅ YOLO responded: {response.status_code}, {response.text}")
-                        response.raise_for_status()
-
-                        data = response.json()
-                        labels = data.get("labels", [])
-
-                        for label in labels:
-                            self.storage.save_detection(
-                                request_id=str(message["message_id"]),
-                                label=label,
-                                confidence=1.0,
-                                bbox="[]"
-                            )
-
-                        if labels:
-                            reply = "🧠 Detected objects: " + ", ".join(labels)
-                        else:
-                            reply = "🔍 No objects detected."
-
-                        self.send_text(chat_id, reply)
-                        self.send_text(chat_id, "💥 Your photo has been *detected* successfully!")
+                        self.send_text(chat_id, "🧠 Image sent to YOLO. You'll receive results soon!")
                         return
 
                     except Exception:
