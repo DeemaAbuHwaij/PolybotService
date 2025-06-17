@@ -3,9 +3,11 @@ from flask import request
 import os
 import json
 from loguru import logger
+from dotenv import load_dotenv
 from polybot.bot import Bot, QuoteBot, ImageProcessingBot
 from polybot.storage.factory import get_storage
 
+load_dotenv(dotenv_path=".env.dev")  # 👈 This loads your Telegram token and BOT_APP_URL
 
 app = flask.Flask(__name__)
 
@@ -15,6 +17,7 @@ BOT_APP_URL = os.environ['BOT_APP_URL']
 # Initialize bot once globally
 storage = get_storage()
 bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL, storage)
+
 
 
 @app.route('/', methods=['GET'])
