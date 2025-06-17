@@ -67,3 +67,4 @@ class DynamoDBStorage(StorageInterface):
                 "predicted_path": item.get("predicted_path")
             }
         return None
+
