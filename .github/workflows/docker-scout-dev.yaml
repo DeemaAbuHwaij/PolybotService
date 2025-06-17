@@ -30,13 +30,15 @@ jobs:
       - name: Build polybot-dev Docker image
         run: |
           docker build -t polybot-dev:scout -f Dockerfile .
+          
 
       - name: Scan image using Docker Scout
         uses: docker/scout-action@v1
         with:
-          command: cves
+          command: compare
           image: polybot-dev:scout
           only-severities: critical,high
           fail-on: critical,high
           summary: true
           write-comment: true
+
