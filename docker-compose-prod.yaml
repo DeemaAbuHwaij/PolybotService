@@ -13,9 +13,12 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - BOT_APP_URL=${BOT_APP_URL}
       - YOLO_URL=${YOLO_URL}
+      - CERT_PATH=${CERT_PATH}
       - STORAGE_TYPE=${STORAGE_TYPE}
       - CERT_PATH=${CERT_PATH}
 
+    volumes:
+      - /etc/letsencrypt/live/proxydeema.fursa.click/fullchain.pem:/app/polybot/certs/fullchain.pem  # ✅ USE the real cert
 
     depends_on:
       - otelcol
@@ -36,5 +39,3 @@ services:
     command: [ "--config=/etc/otelcol/config.yaml" ]
     network_mode: host
     restart: always
-
-
