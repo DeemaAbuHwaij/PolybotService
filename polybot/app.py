@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from polybot.bot import Bot, QuoteBot, ImageProcessingBot
 from polybot.storage.factory import get_storage
 
-load_dotenv(dotenv_path=".env.dev")  # 👈 This loads your Telegram token and BOT_APP_URL
+load_dotenv(dotenv_path=f".env.{os.getenv('ENV', 'dev')}")
 
 app = flask.Flask(__name__)
 
