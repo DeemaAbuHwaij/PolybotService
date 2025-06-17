@@ -9,12 +9,6 @@ import requests
 import logging
 import boto3
 from botocore.exceptions import ClientError
-import uuid
-import json
-
-# SQS + S3 clients
-sqs = boto3.client("sqs", region_name=os.getenv("AWS_REGION"))
-SQS_QUEUE_URL = os.getenv("YOLO_SQS_QUEUE_URL")
 
 
 class Bot:
@@ -65,6 +59,13 @@ class Bot:
         self.telegram_bot_client.send_photo(chat_id, InputFile(img_path))
 
 
+class QuoteBot(Bot):
+    def handle_message(self, msg):
+        logger.info(f'Incoming message: {msg}')
+        if msg["text"] != 'Please don\'t quote me':
+            self.send_text_with_quote(msg['chat']['id'], msg["text"], quoted_msg_id=msg["message_id"])
+
+
 def upload_file(file_name, bucket, object_name=None):
     if object_name is None:
         object_name = os.path.basename(file_name)
@@ -76,25 +77,6 @@ def upload_file(file_name, bucket, object_name=None):
         logging.error(e)
         return False
     return True
-
-
-def send_sqs_message(request_id, image_url, chat_id):
-    message = {
-        "request_id": request_id,
-        "image_url": image_url,
-        "chat_id": chat_id
-    }
-
-    try:
-        response = sqs.send_message(
-            QueueUrl=SQS_QUEUE_URL,
-            MessageBody=json.dumps(message)
-        )
-        logger.info(f"📤 Sent message to SQS: {response}")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Failed to send SQS message: {e}")
-        return False
 
 
 class ImageProcessingBot(Bot):
@@ -232,9 +214,8 @@ class ImageProcessingBot(Bot):
                         output_path = img.save_img()
                         image_name = os.path.basename(output_path)
 
-                        request_id = str(message["message_id"])
                         self.storage.save_prediction(
-                            request_id=request_id,
+                            request_id=str(message["message_id"]),
                             original_path=local_photo_path,
                             predicted_path=str(output_path)
                         )
@@ -247,13 +228,36 @@ class ImageProcessingBot(Bot):
                         if not upload_file(output_path, bucket, s3_key):
                             raise RuntimeError("❌ Upload to S3 failed")
 
-                        image_url = f"https://{bucket}.s3.amazonaws.com/{s3_key}"
+                        yolo_url = os.getenv("YOLO_URL")
+                        if not yolo_url:
+                            raise ValueError("❌ YOLO_URL not set")
 
-                        if not send_sqs_message(request_id, image_url, chat_id):
-                            raise RuntimeError("❌ Failed to queue message to YOLO")
+                        logger.info(f"📡 Sending to YOLO: {yolo_url}")
+                        response = requests.post(yolo_url, json={
+                            "image_name": image_name,
+                            "chat_id": chat_id
+                        })
+                        logger.info(f"✅ YOLO responded: {response.status_code}, {response.text}")
+                        response.raise_for_status()
 
-                        self.send_text(chat_id, f"🧠 Image received and queued for detection.\nPrediction ID: `{request_id}`")
-                        self.send_text(chat_id, "⏳ Please use `/get <prediction_id>` in a few seconds to retrieve results.")
+                        data = response.json()
+                        labels = data.get("labels", [])
+
+                        for label in labels:
+                            self.storage.save_detection(
+                                request_id=str(message["message_id"]),
+                                label=label,
+                                confidence=1.0,
+                                bbox="[]"
+                            )
+
+                        if labels:
+                            reply = "🧠 Detected objects: " + ", ".join(labels)
+                        else:
+                            reply = "🔍 No objects detected."
+
+                        self.send_text(chat_id, reply)
+                        self.send_text(chat_id, "💥 Your photo has been *detected* successfully!")
                         return
 
                     except Exception:
