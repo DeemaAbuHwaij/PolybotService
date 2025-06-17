@@ -76,6 +76,7 @@ jobs:
           echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env  
           echo "STORAGE_TYPE=dynamodb" >> .env
           echo "AWS_REGION=us-west-1" >> .env
+          echo "YOLO_SQS_QUEUE_URL=${{ secrets.YOLO_SQS_QUEUE_URL_DEV }}" >> .env
 
           echo "📝 Contents of .env file:"
           cat .env
