@@ -277,3 +277,4 @@ class ImageProcessingBot(Bot):
             logger.error("❌ Exception while handling message:")
             logger.error(traceback.format_exc())
             self.send_text(chat_id, "Something went wrong. Please try again.")
+
