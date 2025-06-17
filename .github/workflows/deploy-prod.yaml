@@ -76,7 +76,7 @@ jobs:
           echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_PROD }}" >> .env  
           echo "STORAGE_TYPE=dynamodb" >> .env
           echo "AWS_REGION=us-west-1" >> .env
-
+          echo "CERT_PATH=/app/polybot/certs/polybot.crt" >> .env  # ✅ ADD THIS LINE
           echo "📝 Contents of .env file:"
           cat .env
     
