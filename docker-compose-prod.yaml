@@ -7,14 +7,13 @@ services:
     ports:
       - "8443:8443"
     environment:
-      - ENV=prod
+      - ENV=production
       - AWS_REGION=us-west-1
       - AWS_S3_BUCKET=deema-polybot-images
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}   # Use env var from .env
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - BOT_APP_URL=${BOT_APP_URL}
       - YOLO_URL=${YOLO_URL}
       - STORAGE_TYPE=${STORAGE_TYPE}
-      - AWS_REGION=${AWS_REGION}
 
     depends_on:
       - otelcol
