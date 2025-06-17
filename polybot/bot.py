@@ -14,19 +14,32 @@ from botocore.exceptions import ClientError
 class Bot:
     def __init__(self, token, telegram_chat_url, storage):
         self.storage = storage
+        self.token = token
         self.telegram_bot_client = telebot.TeleBot(token)
-        self.telegram_bot_client.remove_webhook()
-        time.sleep(0.5)
-
-        cert_path = os.path.join(os.path.dirname(__file__), 'certs', 'polybot.crt')
-
-        self.telegram_bot_client.set_webhook(
-            url=f'{telegram_chat_url}/{token}/',
-            certificate=open(cert_path, 'r'),
-            timeout=60
-        )
-
+        self.set_webhook()
         logger.info(f'Telegram Bot information\n\n{self.telegram_bot_client.get_me()}')
+
+    def set_webhook(self):
+        time.sleep(0.5)
+        env = os.getenv("ENV", "development")
+        base_url = os.getenv("BOT_APP_URL")
+        full_url = f"{base_url}/{self.token}/"
+        cert_path = os.getenv("CERT_PATH")
+
+        self.telegram_bot_client.remove_webhook()
+        if env == "production" and cert_path:
+            logger.info(f"📡 Setting webhook with certificate to {full_url}")
+            self.telegram_bot_client.set_webhook(
+                url=full_url,
+                certificate=open(cert_path, 'r'),
+                timeout=60
+            )
+        else:
+            logger.info(f"📡 Setting webhook without certificate to {full_url}")
+            self.telegram_bot_client.set_webhook(
+                url=full_url,
+                timeout=60
+            )
 
     def send_text(self, chat_id, text):
         self.telegram_bot_client.send_message(chat_id, text)
@@ -277,4 +290,3 @@ class ImageProcessingBot(Bot):
             logger.error("❌ Exception while handling message:")
             logger.error(traceback.format_exc())
             self.send_text(chat_id, "Something went wrong. Please try again.")
-
