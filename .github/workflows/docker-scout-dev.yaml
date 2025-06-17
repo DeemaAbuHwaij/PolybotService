@@ -7,7 +7,7 @@ on:
 
 jobs:
   docker-scout:
-    name: 🔎 Docker Scout Scan on Dev Image
+    name: Docker Scout Scan on Dev Image
     runs-on: ubuntu-latest
 
     permissions:
@@ -30,15 +30,13 @@ jobs:
       - name: Build polybot-dev Docker image
         run: |
           docker build -t polybot-dev:scout -f Dockerfile .
-          
 
       - name: Scan image using Docker Scout
         uses: docker/scout-action@v1
         with:
-          command: compare
+          command: cves
           image: polybot-dev:scout
           only-severities: critical,high
-          fail-on: critical,high
-          summary: true
-          write-comment: true
-
+          exit-code: true       # ❌ Fail PR if CRITICAL or HIGH
+          summary: true         # ✅ Show summary in logs
+          write-comment: true   # 📝 Add scan report to PR comment
