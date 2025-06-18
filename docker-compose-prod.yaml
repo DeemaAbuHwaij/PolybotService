@@ -1,4 +1,3 @@
-version: "3.8"
 
 services:
   polybot:
@@ -6,6 +5,7 @@ services:
     container_name: polybot-prod
     ports:
       - "8443:8443"
+
     environment:
       - ENV=production
       - AWS_REGION=us-west-1
@@ -16,6 +16,7 @@ services:
       - CERT_PATH=${CERT_PATH}
       - STORAGE_TYPE=${STORAGE_TYPE}
       - CERT_PATH=${CERT_PATH}
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL_PROD}
 
     volumes:
       - /etc/letsencrypt/live/proxydeema.fursa.click/fullchain.pem:/app/polybot/certs/fullchain.pem  # ✅ USE the real cert
