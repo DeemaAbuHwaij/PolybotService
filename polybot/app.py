@@ -1,49 +1,20 @@
 import flask
 from flask import request
 import os
-import json
-from loguru import logger
-from dotenv import load_dotenv
+from bot import Bot, QuoteBot, ImageProcessingBot
 
-from polybot.bot import Bot, QuoteBot, ImageProcessingBot
-from polybot.dynamodb_storage import DynamoDBStorage
-
-# Load environment variables
-load_dotenv(dotenv_path=f".env.{os.getenv('ENV', 'dev')}")
-
+import requests
 app = flask.Flask(__name__)
 
-TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
-BOT_APP_URL = os.environ['BOT_APP_URL']
+TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
+TELEGRAM_CHAT_URL = os.environ['TELEGRAM_CHAT_URL']
 
-# ✅ Always use DynamoDB
-storage = DynamoDBStorage()
-storage.init()
-logger.info("📦 Using DynamoDBStorage")
-
-# Initialize bot
-bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL)
 
 @app.route('/', methods=['GET'])
 def index():
     return 'Ok'
 
-@app.route(f'/{TELEGRAM_BOT_TOKEN}/', methods=['POST'])
-def webhook():
-    try:
-        req = request.get_json()
-        logger.info(f"🔔 Incoming webhook:\n{json.dumps(req, indent=2)}")
-
-        if 'message' not in req:
-            logger.warning("⚠️ Webhook received without 'message' key")
-            return 'ignored', 200
-
-        bot.handle_message(req['message'])
-        return 'Ok', 200
-
-    except Exception as e:
-        logger.error(f"💥 Error in webhook: {e}")
-        return 'error', 500
+YOLO_URL = os.environ.get("YOLO_URL", "http://<YOLO_EC2_PRIVATE_IP>:8080")  # from .env
 
 @app.route('/predictions/<prediction_id>', methods=['POST'])
 def prediction(prediction_id):
@@ -63,5 +34,14 @@ def prediction(prediction_id):
         return {"status": "error", "message": "Prediction not found"}, 404
 
 
+@app.route(f'/{TELEGRAM_TOKEN}/', methods=['POST'])
+def webhook():
+    req = request.get_json()
+    bot.handle_message(req['message'])
+    return 'Ok'
+
+
 if __name__ == "__main__":
+    bot = ImageProcessingBot(TELEGRAM_TOKEN, TELEGRAM_CHAT_URL)
+
     app.run(host='0.0.0.0', port=8443)

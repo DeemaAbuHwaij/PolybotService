@@ -1,14 +1,14 @@
-import traceback
-import telebot
-from loguru import logger
 import os
 import time
-from telebot.types import InputFile
-from polybot.img_proc import Img
-import logging
-import boto3
-from botocore.exceptions import ClientError
 import json
+import logging
+import traceback
+import boto3
+import telebot
+from botocore.exceptions import ClientError
+from telebot.types import InputFile
+from loguru import logger
+from polybot.img_proc import Img
 
 
 class Bot:
@@ -16,7 +16,7 @@ class Bot:
         self.token = token
         self.telegram_bot_client = telebot.TeleBot(token)
         self.set_webhook()
-        logger.info(f'Telegram Bot information\n\n{self.telegram_bot_client.get_me()}')
+        logger.info(f"🤖 Telegram Bot info: {self.telegram_bot_client.get_me()}")
 
     def set_webhook(self):
         time.sleep(0.5)
@@ -27,14 +27,14 @@ class Bot:
 
         self.telegram_bot_client.remove_webhook()
         if env == "production" and cert_path:
-            logger.info(f"📡 Setting webhook with certificate to {full_url}")
+            logger.info(f"📡 Setting webhook with cert: {full_url}")
             self.telegram_bot_client.set_webhook(
                 url=full_url,
                 certificate=open(cert_path, 'r'),
                 timeout=60
             )
         else:
-            logger.info(f"📡 Setting webhook without certificate to {full_url}")
+            logger.info(f"📡 Setting webhook without cert: {full_url}")
             self.telegram_bot_client.set_webhook(
                 url=full_url,
                 timeout=60
@@ -51,7 +51,7 @@ class Bot:
 
     def download_user_photo(self, msg):
         if not self.is_current_msg_photo(msg):
-            raise RuntimeError("Message content of type 'photo' expected")
+            raise RuntimeError("Expected photo in message")
 
         file_info = self.telegram_bot_client.get_file(msg['photo'][-1]['file_id'])
         data = self.telegram_bot_client.download_file(file_info.file_path)
@@ -73,8 +73,8 @@ class Bot:
 
 class QuoteBot(Bot):
     def handle_message(self, msg):
-        logger.info(f'Incoming message: {msg}')
-        if msg["text"] != 'Please don\'t quote me':
+        logger.info(f"Incoming message: {msg}")
+        if msg["text"] != "Please don't quote me":
             self.send_text_with_quote(msg['chat']['id'], msg["text"], quoted_msg_id=msg["message_id"])
 
 
@@ -85,10 +85,22 @@ def upload_file(file_name, bucket, object_name=None):
     s3_client = boto3.client('s3')
     try:
         s3_client.upload_file(file_name, bucket, object_name)
+        return True
     except ClientError as e:
-        logging.error(e)
+        logging.error(f"❌ S3 Upload Error: {e}")
         return False
-    return True
+
+
+def produce_message_to_sqs(message_body: dict, queue_url: str, region: str):
+    sqs = boto3.client("sqs", region_name=region)
+    try:
+        response = sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(message_body)
+        )
+        print(f"✅ Message sent to SQS. ID: {response['MessageId']}")
+    except ClientError as e:
+        print(f"❌ Failed to send message to SQS: {e}")
 
 
 class ImageProcessingBot(Bot):
@@ -106,16 +118,16 @@ class ImageProcessingBot(Bot):
                 if text == '/start':
                     self.send_text(chat_id,
                         "👋 Hi! I'm Deema's image bot.\n\n"
-                        "📸 To apply filters, send one photo with one of the following captions:\n"
+                        "📸 Send a photo with one of these captions:\n"
                         "• Blur\n• Contour\n• Rotate\n• Segment\n• Salt and pepper\n• Detect\n\n"
-                        "🌗 To concatenate images, send two photos together with one of these captions:\n"
+                        "🌗 To concatenate images, send 2 photos together with one of these captions:\n"
                         "• concat horizontal\n• concat vertical"
                     )
                 else:
                     self.send_text(chat_id,
-                        "🖼️ Please send a photo with one of the following filter captions:\n"
+                        "🖼️ Send a photo with one of the following filter captions:\n"
                         "• 📸 Blur\n• ✏️ Contour\n• 🔄 Rotate\n• 🧩 Segment\n• 🧂🌶️ Salt and pepper\n• 🧠 Detect\n\n"
-                        "🌗 *To concatenate two photos*, send them together with a caption:\n"
+                        "🌗 To concatenate two photos, send them together with a caption:\n"
                         "• concat horizontal or concat vertical")
                 return
 
@@ -134,20 +146,17 @@ class ImageProcessingBot(Bot):
                     'detect': '🧠'
                 }
 
-                # Handle concat
                 if media_group_id:
-                    if media_group_id not in self.media_group_photos:
-                        self.media_group_photos[media_group_id] = {
-                            'paths': [],
-                            'caption': caption,
-                            'chat_id': chat_id
-                        }
+                    group = self.media_group_photos.setdefault(media_group_id, {
+                        'paths': [],
+                        'caption': caption,
+                        'chat_id': chat_id
+                    })
 
-                    group = self.media_group_photos[media_group_id]
                     group['paths'].append(local_photo_path)
 
                     if len(group['paths']) > 2:
-                        self.send_text(chat_id, "'Concat' requires 2 photos sent together. Try again please.")
+                        self.send_text(chat_id, "❗ 'Concat' requires 2 photos sent together. Try again.")
                         del self.media_group_photos[media_group_id]
                         return
 
@@ -168,23 +177,23 @@ class ImageProcessingBot(Bot):
                             img1.concat(img2, direction=direction)
                             output_path = img1.save_img()
                             self.send_photo(chat_id, output_path)
-                            self.send_text(chat_id, f"💥 Your photos have been concatenated *{direction}ly* successfully!")
+                            self.send_text(chat_id, f"✅ Concatenated *{direction}ly* successfully!")
                         del self.media_group_photos[media_group_id]
                     return
 
                 if not caption:
-                    self.send_text(chat_id, "Please add a caption like 'Rotate', 'Blur', etc.")
+                    self.send_text(chat_id, "❗ Please add a caption like 'Rotate', 'Blur', etc.")
                     return
 
                 if caption == 'concat':
-                    self.send_text(chat_id, "'Concat' requires 2 photos sent together. Try again please.")
+                    self.send_text(chat_id, "❗ 'Concat' requires 2 photos sent together. Try again.")
                     return
 
                 img = Img(local_photo_path)
 
                 if caption in emoji_map:
                     self.send_text(chat_id,
-                                   f"{emoji_map[caption]} I am doing a {caption} for your photo. Just a few moments...")
+                                   f"{emoji_map[caption]} Applying {caption} filter. Please wait...")
 
                 if caption == 'blur':
                     img.blur()
@@ -200,25 +209,23 @@ class ImageProcessingBot(Bot):
                 if caption in ['blur', 'contour', 'rotate', 'segment', 'salt and pepper']:
                     output_path = img.save_img()
                     self.send_photo(chat_id, output_path)
-                    self.send_text(chat_id, f"💥 Your photo has been *{caption}ed* successfully!")
+                    self.send_text(chat_id, f"✅ Your photo has been *{caption}ed* successfully!")
                     return
 
                 elif caption == 'detect':
                     try:
                         output_path = img.save_img()
                         image_name = os.path.basename(output_path)
-
                         s3_key = f"{chat_id}/original/{image_name}"
                         bucket = os.getenv("AWS_S3_BUCKET")
-                        if not bucket:
-                            raise ValueError("❌ AWS_S3_BUCKET not set")
+                        region = os.getenv("AWS_REGION", "us-west-1")
+                        queue_url = os.getenv("SQS_QUEUE_URL")
+
+                        if not bucket or not queue_url:
+                            raise ValueError("❌ Missing AWS_S3_BUCKET or SQS_QUEUE_URL")
 
                         if not upload_file(output_path, bucket, s3_key):
                             raise RuntimeError("❌ Upload to S3 failed")
-
-                        # 🔁 Send message to SQS
-                        queue_url = os.environ["SQS_QUEUE_URL"]
-                        region = os.environ["AWS_REGION"]
 
                         produce_message_to_sqs(
                             {
@@ -232,7 +239,7 @@ class ImageProcessingBot(Bot):
                             region=region
                         )
 
-                        self.send_text(chat_id, "🕐 Your image was uploaded and is being processed... Please wait a moment.")
+                        self.send_text(chat_id, "🕐 Your image is being processed... please wait.")
                         return
 
                     except Exception:
@@ -248,19 +255,8 @@ class ImageProcessingBot(Bot):
             else:
                 self.send_text(chat_id, "❗ Unsupported message type. Please send a photo with a caption.")
 
-        except Exception as e:
+        except Exception:
             logger.error("❌ Exception while handling message:")
             logger.error(traceback.format_exc())
-            self.send_text(chat_id, "Something went wrong. Please try again.")
-
-
-def produce_message_to_sqs(message_body: dict, queue_url: str, region: str):
-    sqs = boto3.client("sqs", region_name=region)
-    try:
-        response = sqs.send_message(
-            QueueUrl=queue_url,
-            MessageBody=json.dumps(message_body)
-        )
-        print(f"✅ Message sent to SQS. ID: {response['MessageId']}")
-    except ClientError as e:
-        print(f"❌ Failed to send message to SQS: {e}")
+            if chat_id:
+                self.send_text(chat_id, "Something went wrong. Please try again.")
