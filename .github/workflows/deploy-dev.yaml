@@ -20,6 +20,8 @@ on:
         required: true
       S3_BUCKET_NAME_DEV:
         required: true
+      SQS_QUEUE_URL_DEV: # 🔧 Add this
+        required: true
 
   workflow_dispatch:
     inputs:
@@ -74,6 +76,7 @@ jobs:
           echo "BOT_APP_URL=${{ secrets.BOT_APP_URL_DEV }}" >> .env
           echo "YOLO_URL=${{ secrets.YOLO_SERVER_URL_DEV }}" >> .env    
           echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME_DEV }}" >> .env  
+          echo "SQS_QUEUE_URL=${{ secrets.SQS_QUEUE_URL_DEV }}" >> .env   # 🔧 Add this
           echo "STORAGE_TYPE=dynamodb" >> .env
           echo "AWS_REGION=us-west-1" >> .env
 

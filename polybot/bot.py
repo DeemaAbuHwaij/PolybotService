@@ -5,10 +5,10 @@ import os
 import time
 from telebot.types import InputFile
 from polybot.img_proc import Img
-import requests
 import logging
 import boto3
 from botocore.exceptions import ClientError
+import json
 
 
 class Bot:
@@ -230,7 +230,8 @@ class ImageProcessingBot(Bot):
                         self.storage.save_prediction(
                             request_id=str(message["message_id"]),
                             original_path=local_photo_path,
-                            predicted_path=str(output_path)
+                            predicted_path=str(output_path),
+                            chat_id=chat_id
                         )
 
                         s3_key = f"{chat_id}/original/{image_name}"
@@ -241,36 +242,23 @@ class ImageProcessingBot(Bot):
                         if not upload_file(output_path, bucket, s3_key):
                             raise RuntimeError("❌ Upload to S3 failed")
 
-                        yolo_url = os.getenv("YOLO_URL")
-                        if not yolo_url:
-                            raise ValueError("❌ YOLO_URL not set")
+                        # 🔁 Send message to SQS
+                        queue_url = os.environ["SQS_QUEUE_URL"]
+                        region = os.environ["AWS_REGION"]
 
-                        logger.info(f"📡 Sending to YOLO: {yolo_url}")
-                        response = requests.post(yolo_url, json={
-                            "image_name": image_name,
-                            "chat_id": chat_id
-                        })
-                        logger.info(f"✅ YOLO responded: {response.status_code}, {response.text}")
-                        response.raise_for_status()
+                        produce_message_to_sqs(
+                            {
+                                "image_name": image_name,
+                                "bucket_name": bucket,
+                                "region_name": region,
+                                "chat_id": chat_id,
+                                "request_id": str(message["message_id"])
+                            },
+                            queue_url=queue_url,
+                            region=region
+                        )
 
-                        data = response.json()
-                        labels = data.get("labels", [])
-
-                        for label in labels:
-                            self.storage.save_detection(
-                                request_id=str(message["message_id"]),
-                                label=label,
-                                confidence=1.0,
-                                bbox="[]"
-                            )
-
-                        if labels:
-                            reply = "🧠 Detected objects: " + ", ".join(labels)
-                        else:
-                            reply = "🔍 No objects detected."
-
-                        self.send_text(chat_id, reply)
-                        self.send_text(chat_id, "💥 Your photo has been *detected* successfully!")
+                        self.send_text(chat_id, "🕐 Your image was uploaded and is being processed... Please wait a moment.")
                         return
 
                     except Exception:
@@ -290,3 +278,15 @@ class ImageProcessingBot(Bot):
             logger.error("❌ Exception while handling message:")
             logger.error(traceback.format_exc())
             self.send_text(chat_id, "Something went wrong. Please try again.")
+
+
+def produce_message_to_sqs(message_body: dict, queue_url: str, region: str):
+    sqs = boto3.client("sqs", region_name=region)
+    try:
+        response = sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(message_body)
+        )
+        print(f"✅ Message sent to SQS. ID: {response['MessageId']}")
+    except ClientError as e:
+        print(f"❌ Failed to send message to SQS: {e}")
