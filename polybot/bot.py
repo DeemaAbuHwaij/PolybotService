@@ -12,8 +12,7 @@ import json
 
 
 class Bot:
-    def __init__(self, token, telegram_chat_url, storage):
-        self.storage = storage
+    def __init__(self, token, telegram_chat_url):
         self.token = token
         self.telegram_bot_client = telebot.TeleBot(token)
         self.set_webhook()
@@ -93,8 +92,8 @@ def upload_file(file_name, bucket, object_name=None):
 
 
 class ImageProcessingBot(Bot):
-    def __init__(self, token, telegram_chat_url, storage):
-        super().__init__(token, telegram_chat_url, storage)
+    def __init__(self, token, telegram_chat_url):
+        super().__init__(token, telegram_chat_url)
         self.media_group_photos = {}
 
     def handle_message(self, message):
@@ -110,25 +109,8 @@ class ImageProcessingBot(Bot):
                         "📸 To apply filters, send one photo with one of the following captions:\n"
                         "• Blur\n• Contour\n• Rotate\n• Segment\n• Salt and pepper\n• Detect\n\n"
                         "🌗 To concatenate images, send two photos together with one of these captions:\n"
-                        "• concat horizontal\n• concat vertical\n\n"
-                        "Just type the filter name as the photo's caption.\n\n"
-                        "📥 To retrieve a saved prediction: `/get <message_id>`"
+                        "• concat horizontal\n• concat vertical"
                     )
-                elif text.startswith('/get'):
-                    parts = text.split()
-                    if len(parts) != 2:
-                        self.send_text(chat_id, "Usage: /get <message_id>")
-                        return
-
-                    request_id = parts[1]
-                    prediction = self.storage.get_prediction(request_id)
-
-                    if prediction:
-                        self.send_text(chat_id, "🎯 Found your saved prediction:")
-                        self.send_text(chat_id, f"🖼️ Original path: {prediction['original_path']}")
-                        self.send_text(chat_id, f"📸 Processed path: {prediction['predicted_path']}")
-                    else:
-                        self.send_text(chat_id, "❌ No prediction found for this ID.")
                 else:
                     self.send_text(chat_id,
                         "🖼️ Please send a photo with one of the following filter captions:\n"
@@ -186,8 +168,7 @@ class ImageProcessingBot(Bot):
                             img1.concat(img2, direction=direction)
                             output_path = img1.save_img()
                             self.send_photo(chat_id, output_path)
-                            self.send_text(chat_id,
-                                           f"💥 Your photos have been concatenated *{direction}ly* successfully!")
+                            self.send_text(chat_id, f"💥 Your photos have been concatenated *{direction}ly* successfully!")
                         del self.media_group_photos[media_group_id]
                     return
 
@@ -226,13 +207,6 @@ class ImageProcessingBot(Bot):
                     try:
                         output_path = img.save_img()
                         image_name = os.path.basename(output_path)
-
-                        self.storage.save_prediction(
-                            request_id=str(message["message_id"]),
-                            original_path=local_photo_path,
-                            predicted_path=str(output_path),
-                            chat_id=chat_id
-                        )
 
                         s3_key = f"{chat_id}/original/{image_name}"
                         bucket = os.getenv("AWS_S3_BUCKET")
