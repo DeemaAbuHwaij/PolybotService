@@ -22,7 +22,7 @@ storage.init()
 logger.info("📦 Using DynamoDBStorage")
 
 # Initialize bot
-bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL, storage)
+bot = ImageProcessingBot(TELEGRAM_BOT_TOKEN, BOT_APP_URL)
 
 @app.route('/', methods=['GET'])
 def index():
