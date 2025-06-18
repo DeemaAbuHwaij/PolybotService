@@ -58,3 +58,4 @@ jobs:
       BOT_APP_URL_DEV: ${{ secrets.BOT_APP_URL_DEV }}
       YOLO_SERVER_URL_DEV: ${{ secrets.YOLO_SERVER_URL_DEV }}
       S3_BUCKET_NAME_DEV: ${{ secrets.S3_BUCKET_NAME_DEV }}
+      SQS_QUEUE_URL_DEV: ${{ secrets.SQS_QUEUE_URL_DEV }}   # ✅ Add this here too

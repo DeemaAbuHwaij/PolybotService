@@ -5,17 +5,10 @@ import os
 import time
 from telebot.types import InputFile
 from polybot.img_proc import Img
-import requests
 import logging
 import boto3
 from botocore.exceptions import ClientError
-import uuid
 import json
-
-
-# SQS client (global)
-sqs = boto3.client("sqs", region_name=os.getenv("AWS_REGION"))
-SQS_QUEUE_URL = os.getenv("YOLO_SQS_QUEUE_URL")
 
 
 class Bot:
@@ -90,7 +83,7 @@ def upload_file(file_name, bucket, object_name=None):
     if object_name is None:
         object_name = os.path.basename(file_name)
 
-    s3_client = boto3.client('s3', region_name=os.getenv("AWS_REGION"))
+    s3_client = boto3.client('s3')
     try:
         s3_client.upload_file(file_name, bucket, object_name)
     except ClientError as e:
@@ -159,6 +152,7 @@ class ImageProcessingBot(Bot):
                     'detect': '🧠'
                 }
 
+                # Handle concat
                 if media_group_id:
                     if media_group_id not in self.media_group_photos:
                         self.media_group_photos[media_group_id] = {
@@ -232,35 +226,39 @@ class ImageProcessingBot(Bot):
                     try:
                         output_path = img.save_img()
                         image_name = os.path.basename(output_path)
-                        prediction_id = str(uuid.uuid4())
 
-                        # Save locally
                         self.storage.save_prediction(
-                            request_id=prediction_id,
+                            request_id=str(message["message_id"]),
                             original_path=local_photo_path,
-                            predicted_path=str(output_path)
+                            predicted_path=str(output_path),
+                            chat_id=chat_id
                         )
 
+                        s3_key = f"{chat_id}/original/{image_name}"
                         bucket = os.getenv("AWS_S3_BUCKET")
                         if not bucket:
                             raise ValueError("❌ AWS_S3_BUCKET not set")
 
-                        s3_key = f"{chat_id}/original/{image_name}"
                         if not upload_file(output_path, bucket, s3_key):
                             raise RuntimeError("❌ Upload to S3 failed")
 
-                        # Send to SQS
-                        sqs.send_message(
-                            QueueUrl=SQS_QUEUE_URL,
-                            MessageBody=json.dumps({
-                                "request_id": prediction_id,
+                        # 🔁 Send message to SQS
+                        queue_url = os.environ["SQS_QUEUE_URL"]
+                        region = os.environ["AWS_REGION"]
+
+                        produce_message_to_sqs(
+                            {
+                                "image_name": image_name,
+                                "bucket_name": bucket,
+                                "region_name": region,
                                 "chat_id": chat_id,
-                                "image_url": f"https://{bucket}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{s3_key}",
-                                "bucket": bucket
-                            })
+                                "request_id": str(message["message_id"])
+                            },
+                            queue_url=queue_url,
+                            region=region
                         )
 
-                        self.send_text(chat_id, "🧠 Image sent to YOLO. You'll receive results soon!")
+                        self.send_text(chat_id, "🕐 Your image was uploaded and is being processed... Please wait a moment.")
                         return
 
                     except Exception:
@@ -280,3 +278,15 @@ class ImageProcessingBot(Bot):
             logger.error("❌ Exception while handling message:")
             logger.error(traceback.format_exc())
             self.send_text(chat_id, "Something went wrong. Please try again.")
+
+
+def produce_message_to_sqs(message_body: dict, queue_url: str, region: str):
+    sqs = boto3.client("sqs", region_name=region)
+    try:
+        response = sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(message_body)
+        )
+        print(f"✅ Message sent to SQS. ID: {response['MessageId']}")
+    except ClientError as e:
+        print(f"❌ Failed to send message to SQS: {e}")
