@@ -93,15 +93,15 @@ def upload_file(file_name, bucket, object_name=None):
 
 def produce_message_to_sqs(message_body: dict, queue_url: str, region: str):
     sqs = boto3.client("sqs", region_name=region)
+    logger.debug(f"📤 SQS payload: {json.dumps(message_body, indent=2)}")
     try:
         response = sqs.send_message(
             QueueUrl=queue_url,
             MessageBody=json.dumps(message_body)
         )
-        print(f"✅ Message sent to SQS. ID: {response['MessageId']}")
+        logger.info(f"✅ Message sent to SQS. ID: {response['MessageId']}")
     except ClientError as e:
-        print(f"❌ Failed to send message to SQS: {e}")
-
+        logger.error(f"❌ Failed to send message to SQS: {e}")
 
 class ImageProcessingBot(Bot):
     def __init__(self, token, telegram_chat_url):

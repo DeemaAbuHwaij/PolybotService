@@ -2,6 +2,7 @@ import boto3
 import os
 import json
 from decimal import Decimal
+from loguru import logger
 
 class DynamoDBStorage:
     def __init__(self):
@@ -15,11 +16,13 @@ class DynamoDBStorage:
             response = self.table.get_item(Key={'uid': uid})
             item = response.get('Item')
             if not item:
+                logger.warning(f"[DynamoDB] No prediction found for UID: {uid}")
                 return None
 
-            # 🧠 Extract labels from detections list
             detections = item.get("detections", [])
             labels = [d.get("label") for d in detections if "label" in d]
+
+            logger.info(f"[DynamoDB] Retrieved prediction for UID: {uid}")
 
             return {
                 "prediction_uid": item.get("uid"),
@@ -30,5 +33,8 @@ class DynamoDBStorage:
                 "chat_id": item.get("chat_id")
             }
         except Exception as e:
-            print(f"[ERROR] get_prediction failed: {e}")
+            logger.error(f"[ERROR] get_prediction failed: {e}")
             return None
+
+    def init(self):
+        pass
