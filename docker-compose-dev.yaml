@@ -6,14 +6,17 @@ services:
     container_name: polybot-dev
     ports:
       - "8443:8443"
+
     environment:
       - ENV=development
       - AWS_REGION=us-west-1
       - AWS_S3_BUCKET=deema-polybot-dev-images
-      - TELEGRAM_BOT_TOKEN=8011543801:AAF5_DQOM1phCL8h4Z629JQrydd7lbrTwwc
-      - BOT_APP_URL=https://proxydeema.fursa.click
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - BOT_APP_URL=${BOT_APP_URL}
       - YOLO_URL=${YOLO_URL}
       - STORAGE_TYPE=${STORAGE_TYPE}
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL_DEV}
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
     depends_on:
       - otelcol
     restart: unless-stopped

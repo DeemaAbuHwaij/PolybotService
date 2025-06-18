@@ -20,6 +20,8 @@ on:
         required: true
       S3_BUCKET_NAME_PROD:
         required: true
+      SQS_QUEUE_URL_PROD: # 🔧 Add this
+        required: true
 
   workflow_dispatch:
     inputs:
@@ -77,6 +79,7 @@ jobs:
           echo "STORAGE_TYPE=dynamodb" >> .env
           echo "AWS_REGION=us-west-1" >> .env
           echo "CERT_PATH=/app/polybot/certs/polybot.crt" >> .env
+          echo "SQS_QUEUE_URL=https://sqs.us-west-1.amazonaws.com/228281126655/deema-polybot-chat-messages-prod" >> .env   # 🔧 Add this
 
           echo "📝 Contents of .env file:"
           cat .env
