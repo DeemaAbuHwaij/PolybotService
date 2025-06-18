@@ -255,7 +255,7 @@ class ImageProcessingBot(Bot):
                             MessageBody=json.dumps({
                                 "request_id": prediction_id,
                                 "chat_id": chat_id,
-                                "image_s3_key": s3_key,
+                                "image_url": f"https://{bucket}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{s3_key}",
                                 "bucket": bucket
                             })
                         )
