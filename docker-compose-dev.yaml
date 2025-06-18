@@ -6,6 +6,7 @@ services:
     container_name: polybot-dev
     ports:
       - "8443:8443"
+
     environment:
       - ENV=development
       - AWS_REGION=us-west-1
