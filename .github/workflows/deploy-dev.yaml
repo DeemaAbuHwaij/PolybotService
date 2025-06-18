@@ -20,7 +20,7 @@ on:
         required: true
       S3_BUCKET_NAME_DEV:
         required: true
-      SQS_QUEUE_URL_DEV: # 🔧 Add this
+      SQS_QUEUE_URL: # 🔧 Add this
         required: true
 
   workflow_dispatch:
