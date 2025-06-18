@@ -79,6 +79,7 @@ jobs:
           echo "SQS_QUEUE_URL=${{ secrets.SQS_QUEUE_URL_DEV }}" >> .env   # 🔧 Add this
           echo "STORAGE_TYPE=dynamodb" >> .env
           echo "AWS_REGION=us-west-1" >> .env
+          echo "YOLO_SQS_QUEUE_URL=${{ secrets.YOLO_SQS_QUEUE_URL_DEV }}" >> .env
 
           echo "📝 Contents of .env file:"
           cat .env
