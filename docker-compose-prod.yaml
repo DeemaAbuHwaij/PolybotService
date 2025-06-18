@@ -16,7 +16,8 @@ services:
       - CERT_PATH=${CERT_PATH}
       - STORAGE_TYPE=${STORAGE_TYPE}
       - CERT_PATH=${CERT_PATH}
-      - SQS_QUEUE_URL=${SQS_QUEUE_URL_PROD}
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
+
 
     volumes:
       - /etc/letsencrypt/live/proxydeema.fursa.click/fullchain.pem:/app/polybot/certs/fullchain.pem  # ✅ USE the real cert
