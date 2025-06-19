@@ -37,7 +37,6 @@ jobs:
           command: cves
           image: polybot-dev:scout
           only-severities: critical,high
-          ignore: CVE-2025-6020     # 👈 Ignore known HIGH severity CVE
-          exit-code: true           # ❌ Fail PR if CRITICAL/HIGH (except ignored)
-          summary: true             # ✅ Show summary in logs
-          write-comment: true       # 📝 Add scan report to PR comment
+          exit-code: true       # ❌ Fail PR if CRITICAL or HIGH
+          summary: true         # ✅ Show summary in logs
+          write-comment: true   # 📝 Add scan report to PR comment
