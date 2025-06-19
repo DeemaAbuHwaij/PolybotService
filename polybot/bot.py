@@ -3,6 +3,8 @@ import time
 import json
 import logging
 import traceback
+import uuid
+
 import boto3
 import telebot
 from botocore.exceptions import ClientError
@@ -227,13 +229,15 @@ class ImageProcessingBot(Bot):
                         if not upload_file(output_path, bucket, s3_key):
                             raise RuntimeError("❌ Upload to S3 failed")
 
+                        unique_id = str(uuid.uuid4())  # ✅ generate UUID
+
                         produce_message_to_sqs(
                             {
                                 "image_name": image_name,
                                 "bucket_name": bucket,
                                 "region_name": region,
                                 "chat_id": chat_id,
-                                "request_id": str(message["message_id"])
+                                "uid": unique_id  # ✅ send uid instead of request_id
                             },
                             queue_url=queue_url,
                             region=region
