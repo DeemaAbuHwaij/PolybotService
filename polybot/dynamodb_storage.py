@@ -12,26 +12,25 @@ class DynamoDBStorage:
         self.dynamodb = boto3.resource("dynamodb", region_name=self.region)
         self.table = self.dynamodb.Table(self.table_name)
 
-    def get_prediction(self, request_id):
+    def get_prediction(self, uid):
         try:
-            response = self.table.get_item(Key={'request_id': str(request_id)})
+            response = self.table.get_item(Key={'uid': str(uid)})
             item = response.get('Item')
             if not item:
-                logger.warning(f"[DynamoDB] No prediction found for request_id: {request_id}")
+                logger.warning(f"[DynamoDB] No prediction found for uid: {uid}")
                 return None
 
             detections = item.get("detections", [])
             labels = [d.get("label") for d in detections if "label" in d]
 
-            # 🧠 Strip paths to get just the filenames
             original_image = Path(item.get("original_path", "")).name
             predicted_image = Path(item.get("predicted_path", "")).name
 
-            logger.info(f"[DynamoDB] Retrieved prediction for request_id: {request_id}")
+            logger.info(f"[DynamoDB] Retrieved prediction for uid: {uid}")
             logger.debug(f"[DynamoDB] Returning filenames: {original_image}, {predicted_image}")
 
             return {
-                "prediction_uid": item.get("request_id"),
+                "prediction_uid": item.get("uid"),
                 "original_image": original_image,
                 "predicted_image": predicted_image,
                 "labels": labels,
